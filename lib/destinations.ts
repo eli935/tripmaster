@@ -78,13 +78,13 @@ export const MONTENEGRO: DestinationInfo = {
   country_code: "ME",
   currency: "EUR",
   currency_symbol: "€",
-  hero_image: "https://images.unsplash.com/photo-1596627116790-af6f46dddbae?w=1600&q=80",
+  hero_image: "https://images.unsplash.com/photo-1596627116790-af6f46dddbae?w=600&q=75",
   gallery: [
-    "https://images.unsplash.com/photo-1596627116790-af6f46dddbae?w=1200&q=80", // Kotor bay
-    "https://images.unsplash.com/photo-1626108870272-4317d1772c4c?w=1200&q=80", // Budva old town
-    "https://images.unsplash.com/photo-1585155770447-2f66e2a397b5?w=1200&q=80", // Sveti Stefan
-    "https://images.unsplash.com/photo-1632170568962-2e7c0c32bcd8?w=1200&q=80", // mountains
-    "https://images.unsplash.com/photo-1630067232620-ba6b3f5b7abd?w=1200&q=80", // beaches
+    "https://images.unsplash.com/photo-1596627116790-af6f46dddbae?w=600&q=75", // Kotor bay
+    "https://images.unsplash.com/photo-1626108870272-4317d1772c4c?w=600&q=75", // Budva old town
+    "https://images.unsplash.com/photo-1585155770447-2f66e2a397b5?w=600&q=75", // Sveti Stefan
+    "https://images.unsplash.com/photo-1632170568962-2e7c0c32bcd8?w=600&q=75", // mountains
+    "https://images.unsplash.com/photo-1630067232620-ba6b3f5b7abd?w=600&q=75", // beaches
   ],
   description:
     "מונטנגרו, פנינת הבלקן על חופי הים האדריאטי, מציעה שילוב נדיר של הרים דרמטיים, חופים כחולים, עיירות עתיקות ונופים עוצרי נשימה. יעד מושלם למשפחות חרדיות עם בית חב״ד פעיל ומסעדה כשרה למהדרין.",
@@ -143,7 +143,7 @@ export const MONTENEGRO: DestinationInfo = {
       waze: "https://waze.com/ul?q=Kotor+Old+Town",
       price: "חינם (טיפוס לחומות: 15€)",
       duration: "2-4 שעות",
-      image: "https://images.unsplash.com/photo-1596627116790-af6f46dddbae?w=800&q=80",
+      image: "https://images.unsplash.com/photo-1596627116790-af6f46dddbae?w=600&q=75",
       must_visit: true,
       kids_friendly: true,
       religious_compatible: true,
@@ -160,7 +160,7 @@ export const MONTENEGRO: DestinationInfo = {
       price: "מבוגר 13€, ילד 8€",
       duration: "1.5 שעות",
       hours: "אפריל-אוקטובר: 10:00-17:00 | חובה הזמנה מראש",
-      image: "https://images.unsplash.com/photo-1583445095369-4dbe574f58a5?w=800&q=80",
+      image: "https://images.unsplash.com/photo-1583445095369-4dbe574f58a5?w=600&q=75",
       must_visit: true,
       kids_friendly: true,
     },
@@ -174,7 +174,7 @@ export const MONTENEGRO: DestinationInfo = {
       waze: "https://waze.com/ul?q=Virpazar+Skadar",
       price: "שייט: 25€ למבוגר",
       duration: "חצי יום",
-      image: "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=800&q=80",
+      image: "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=600&q=75",
       must_visit: true,
       kids_friendly: true,
       religious_compatible: false,
@@ -215,7 +215,7 @@ export const MONTENEGRO: DestinationInfo = {
       price: "מבוגר 23€, ילד 13€",
       duration: "2-3 שעות",
       hours: "9:00-18:00 (תלוי מזג אוויר)",
-      image: "https://images.unsplash.com/photo-1632170568962-2e7c0c32bcd8?w=800&q=80",
+      image: "https://images.unsplash.com/photo-1632170568962-2e7c0c32bcd8?w=600&q=75",
       must_visit: true,
       kids_friendly: true,
     },
@@ -228,7 +228,7 @@ export const MONTENEGRO: DestinationInfo = {
       google_maps: "https://maps.google.com/?q=Perast+Our+Lady+of+the+Rocks",
       price: "5€ שייט, 2€ כניסה לכנסייה",
       duration: "2 שעות",
-      image: "https://images.unsplash.com/photo-1564668292-c0d5b866fc33?w=800&q=80",
+      image: "https://images.unsplash.com/photo-1564668292-c0d5b866fc33?w=600&q=75",
       must_visit: true,
       kids_friendly: true,
     },
@@ -241,7 +241,7 @@ export const MONTENEGRO: DestinationInfo = {
       google_maps: "https://maps.google.com/?q=Sveti+Stefan",
       price: "חינם מהתצפית",
       duration: "1 שעה",
-      image: "https://images.unsplash.com/photo-1585155770447-2f66e2a397b5?w=800&q=80",
+      image: "https://images.unsplash.com/photo-1585155770447-2f66e2a397b5?w=600&q=75",
       must_visit: true,
       religious_compatible: true,
     },
@@ -266,7 +266,7 @@ export const MONTENEGRO: DestinationInfo = {
       google_maps: "https://maps.google.com/?q=Mogren+Beach+Budva",
       price: "חינם",
       duration: "2-3 שעות",
-      image: "https://images.unsplash.com/photo-1630067232620-ba6b3f5b7abd?w=800&q=80",
+      image: "https://images.unsplash.com/photo-1630067232620-ba6b3f5b7abd?w=600&q=75",
       must_visit: false,
       religious_compatible: true,
     },
@@ -307,11 +307,11 @@ export const ROME: DestinationInfo = {
   country_code: "IT",
   currency: "EUR",
   currency_symbol: "€",
-  hero_image: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=1600&q=80",
+  hero_image: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=600&q=75",
   gallery: [
-    "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=1200&q=80",
-    "https://images.unsplash.com/photo-1529260830199-42c24126f198?w=1200&q=80",
-    "https://images.unsplash.com/photo-1531572753322-ad063cecc140?w=1200&q=80",
+    "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=600&q=75",
+    "https://images.unsplash.com/photo-1529260830199-42c24126f198?w=600&q=75",
+    "https://images.unsplash.com/photo-1531572753322-ad063cecc140?w=600&q=75",
   ],
   description:
     "רומא, בירת איטליה, שוקקת היסטוריה בת אלפי שנים. הגטו היהודי ההיסטורי בעיר הוא אחד העתיקים בעולם, עם בתי כנסת, מסעדות כשרות ואטרקציות לאורך הדרך.",
@@ -364,7 +364,7 @@ export const ROME: DestinationInfo = {
       google_maps: "https://maps.google.com/?q=Colosseum+Rome",
       price: "16€ למבוגר",
       duration: "2-3 שעות",
-      image: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=800&q=80",
+      image: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=600&q=75",
       must_visit: true,
       kids_friendly: true,
     },
@@ -375,7 +375,7 @@ export const ROME: DestinationInfo = {
       address: "Vatican City",
       google_maps: "https://maps.google.com/?q=Vatican+City",
       duration: "חצי יום",
-      image: "https://images.unsplash.com/photo-1531572753322-ad063cecc140?w=800&q=80",
+      image: "https://images.unsplash.com/photo-1531572753322-ad063cecc140?w=600&q=75",
       must_visit: true,
     },
     {
@@ -422,10 +422,10 @@ export const ATHENS: DestinationInfo = {
   country_code: "GR",
   currency: "EUR",
   currency_symbol: "€",
-  hero_image: "https://images.unsplash.com/photo-1555993539-1732b0258235?w=1600&q=80",
+  hero_image: "https://images.unsplash.com/photo-1555993539-1732b0258235?w=600&q=75",
   gallery: [
-    "https://images.unsplash.com/photo-1555993539-1732b0258235?w=1200&q=80",
-    "https://images.unsplash.com/photo-1603565816030-6b389eeb23cb?w=1200&q=80",
+    "https://images.unsplash.com/photo-1555993539-1732b0258235?w=600&q=75",
+    "https://images.unsplash.com/photo-1603565816030-6b389eeb23cb?w=600&q=75",
   ],
   description: "אתונה, ערש הדמוקרטיה, משלבת היסטוריה עתיקה עם חיים מודרניים.",
   language: "יוונית",
@@ -462,7 +462,7 @@ export const ATHENS: DestinationInfo = {
       google_maps: "https://maps.google.com/?q=Acropolis+Athens",
       price: "20€",
       duration: "3 שעות",
-      image: "https://images.unsplash.com/photo-1555993539-1732b0258235?w=800&q=80",
+      image: "https://images.unsplash.com/photo-1555993539-1732b0258235?w=600&q=75",
       must_visit: true,
       kids_friendly: true,
     },

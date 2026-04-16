@@ -138,14 +138,14 @@ export function DestinationOverview({ destination, rates }: DestinationOverviewP
 
       {/* Chabad Houses */}
       {destination.chabad.length > 0 && (
-        <Section title="בית חב״ד" icon="🕎" delay={0.4}>
+        <Section title="בית חב״ד" icon="🕎" delay={0.1}>
           <div className="grid gap-3 md:grid-cols-2">
             {destination.chabad.map((ch, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 + i * 0.1 }}
+                transition={{ delay: 0.1 + i * 0.05 }}
                 className="rounded-2xl glass glass-hover p-4 space-y-2"
               >
                 <div>
@@ -218,14 +218,14 @@ export function DestinationOverview({ destination, rates }: DestinationOverviewP
 
       {/* Kosher Restaurants */}
       {destination.restaurants.length > 0 && (
-        <Section title="מסעדות כשרות" icon="🍽️" delay={0.6}>
+        <Section title="מסעדות כשרות" icon="🍽️" delay={0.1}>
           <div className="grid gap-3 md:grid-cols-2">
             {destination.restaurants.map((r, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 + i * 0.1 }}
+                transition={{ delay: 0.15 + i * 0.05 }}
                 className="rounded-2xl glass glass-hover p-4 space-y-2"
               >
                 <div className="flex items-start justify-between">
@@ -306,14 +306,14 @@ export function DestinationOverview({ destination, rates }: DestinationOverviewP
 
       {/* Attractions */}
       {destination.attractions.length > 0 && (
-        <Section title="אטרקציות ומקומות חובה" icon="📍" delay={0.8}>
+        <Section title="אטרקציות ומקומות חובה" icon="📍" delay={0.1}>
           <div className="grid gap-3 md:grid-cols-2">
             {destination.attractions.map((a, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.9 + i * 0.05 }}
+                transition={{ delay: 0.2 + i * 0.03 }}
                 className="rounded-2xl glass glass-hover overflow-hidden group"
               >
                 {a.image && (
@@ -381,7 +381,7 @@ export function DestinationOverview({ destination, rates }: DestinationOverviewP
 
       {/* Shopping Centers */}
       {destination.shopping_centers.length > 0 && (
-        <Section title="סופרמרקטים וקניות" icon="🛒" delay={1.0}>
+        <Section title="סופרמרקטים וקניות" icon="🛒" delay={0.2}>
           <div className="grid gap-2 md:grid-cols-2">
             {destination.shopping_centers.map((s, i) => (
               <a
@@ -407,7 +407,7 @@ export function DestinationOverview({ destination, rates }: DestinationOverviewP
 
       {/* Halachic Notes */}
       {destination.halachic_notes && destination.halachic_notes.length > 0 && (
-        <Section title="הערות הלכתיות" icon="📖" delay={1.1}>
+        <Section title="הערות הלכתיות" icon="📖" delay={0.2}>
           <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4">
             <ul className="space-y-2">
               {destination.halachic_notes.map((n, i) => (

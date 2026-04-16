@@ -301,9 +301,9 @@ function TripCard({ trip }: { trip: Trip & { role: string } }) {
 
   // Destination image map
   const destImages: Record<string, string> = {
-    מונטנגרו: "https://images.unsplash.com/photo-1596627116790-af6f46dddbae?w=800&q=80",
-    רומא: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=800&q=80",
-    אתונה: "https://images.unsplash.com/photo-1555993539-1732b0258235?w=800&q=80",
+    מונטנגרו: "https://images.unsplash.com/photo-1596627116790-af6f46dddbae?w=600&q=75",
+    רומא: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=600&q=75",
+    אתונה: "https://images.unsplash.com/photo-1555993539-1732b0258235?w=600&q=75",
   };
   const heroImage = Object.keys(destImages).find((k) => trip.destination.includes(k))
     ? destImages[Object.keys(destImages).find((k) => trip.destination.includes(k))!]

@@ -60,9 +60,14 @@ import { HolidayBanner } from "@/components/holiday-banner";
 import { FileManager } from "./file-manager";
 import { DestinationOverview } from "./destination-overview";
 import { PermissionsManager } from "./permissions-manager";
+import { AdminPanel } from "./admin-panel";
+import { TripChat } from "./trip-chat";
+import { ExpenseDialog } from "./expense-dialog";
+import { DeleteButton } from "./delete-button";
 import type { TripPermission } from "@/lib/permissions";
+import type { ExpensePayer } from "@/lib/types-v8";
 import { FadeUp, StaggerContainer, StaggerItem, GlowPulse } from "@/components/motion";
-import { Paperclip, Compass } from "lucide-react";
+import { Paperclip, Compass, MessageCircle, Shield } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { DestinationInfo } from "@/lib/destinations";
 import {
@@ -100,10 +105,11 @@ interface TripOverviewProps {
   destination: DestinationInfo | null;
   rates: Record<string, number> | null;
   permissions: TripPermission[];
+  expensePayers: ExpensePayer[];
   userId: string;
 }
 
-type Tab = "destination" | "overview" | "meals" | "equipment" | "shopping" | "expenses" | "files" | "lessons" | "summary" | "settings";
+type Tab = "destination" | "overview" | "chat" | "meals" | "equipment" | "shopping" | "expenses" | "files" | "lessons" | "summary" | "admin" | "settings";
 
 export function TripOverview({
   trip,
@@ -119,6 +125,7 @@ export function TripOverview({
   destination,
   rates,
   permissions,
+  expensePayers,
   userId,
 }: TripOverviewProps) {
   const [activeTab, setActiveTab] = useState<Tab>(destination ? "destination" : "overview");
@@ -154,6 +161,7 @@ export function TripOverview({
   const allTabs = [
     ...(destination && canSee.destination ? [{ id: "destination" as Tab, label: "יעד", icon: Compass, count: 0 }] : []),
     ...(canSee.overview ? [{ id: "overview" as Tab, label: "סקירה", icon: Users, count: participants.length }] : []),
+    { id: "chat" as Tab, label: "צ׳אט", icon: MessageCircle, count: 0 },
     ...(canSee.meals ? [{ id: "meals" as Tab, label: "ארוחות", icon: ChefHat, count: meals.length }] : []),
     ...(canSee.equipment ? [{ id: "equipment" as Tab, label: "ציוד", icon: Package, count: equipment.length }] : []),
     ...(canSee.shopping ? [{ id: "shopping" as Tab, label: "קניות", icon: ShoppingCart, count: shopping.length }] : []),
@@ -161,6 +169,7 @@ export function TripOverview({
     ...(canSee.files ? [{ id: "files" as Tab, label: "קבצים", icon: Paperclip, count: files.length }] : []),
     ...(canSee.lessons ? [{ id: "lessons" as Tab, label: "לקחים", icon: Lightbulb, count: lessons.length }] : []),
     { id: "summary" as Tab, label: "סיכום", icon: FileText, count: 0 },
+    ...(isAdmin ? [{ id: "admin" as Tab, label: "מנהל", icon: Shield, count: 0 }] : []),
     ...(isAdmin ? [{ id: "settings" as Tab, label: "הגדרות", icon: Settings, count: 0 }] : []),
   ];
   const tabs = allTabs;
@@ -222,6 +231,17 @@ export function TripOverview({
           {activeTab === "destination" && destination && (
             <DestinationOverview destination={destination} rates={rates} />
           )}
+          {activeTab === "chat" && (
+            <TripChat
+              tripId={trip.id}
+              userId={userId}
+              userName={participants.find((p) => p.profile_id === userId)?.profile?.full_name || "אני"}
+              participants={participants}
+            />
+          )}
+          {activeTab === "admin" && isAdmin && (
+            <AdminPanel tripId={trip.id} userId={userId} />
+          )}
           {activeTab === "overview" && (
             <OverviewTab
               trip={trip}
@@ -254,6 +274,7 @@ export function TripOverview({
               participants={participants}
               tripId={trip.id}
               userId={userId}
+              isAdmin={isAdmin}
             />
           )}
           {activeTab === "files" && (
@@ -705,45 +726,26 @@ function ExpensesTab({
   participants,
   tripId,
   userId,
+  isAdmin,
 }: {
   expenses: Expense[];
   participants: TripParticipant[];
   tripId: string;
   userId: string;
+  isAdmin: boolean;
 }) {
-  const supabase = createClient();
   const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
-  const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<ExpenseCategory>("other");
-  const [splitType, setSplitType] = useState<SplitType>("equal");
 
   const profileNames: Record<string, string> = {};
   participants.forEach((p) => {
     profileNames[p.profile_id] = (p.profile as any)?.full_name || "???";
   });
 
+  const currentUserName = profileNames[userId] || "אני";
   const balances = calculateBalances(expenses, participants, profileNames);
   const transfers = minimizeTransfers(balances);
   const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
-
-  async function addExpense(e: React.FormEvent) {
-    e.preventDefault();
-    await supabase.from("expenses").insert({
-      trip_id: tripId,
-      paid_by: userId,
-      amount: parseFloat(amount),
-      category,
-      description,
-      split_type: splitType,
-    });
-    setAddOpen(false);
-    setAmount("");
-    setDescription("");
-    router.refresh();
-    toast.success("הוצאה נרשמה!");
-  }
 
   // Per-family breakdown
   const sharedExpenses = expenses.filter((e) => e.split_type !== "private");
@@ -796,84 +798,44 @@ function ExpensesTab({
       {/* Add Expense */}
       <div className="flex justify-between items-center">
         <h2 className="font-semibold">הוצאות</h2>
-        <Dialog open={addOpen} onOpenChange={setAddOpen}>
-          <DialogTrigger
-            render={<Button size="sm"><Plus className="ml-1 h-4 w-4" />הוספת הוצאה</Button>}
-          />
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle>הוספת הוצאה</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={addExpense} className="space-y-3">
-              <div className="space-y-2">
-                <Label>תיאור</Label>
-                <Input
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder='למשל "קניות בשר"'
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>סכום (₪)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  required
-                  dir="ltr"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>קטגוריה</Label>
-                <Select value={category} onValueChange={(v) => setCategory(v as ExpenseCategory)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(EXPENSE_CATEGORIES).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>חלוקה</Label>
-                <Select value={splitType} onValueChange={(v) => setSplitType(v as SplitType)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="equal">שווה בין משפחות</SelectItem>
-                    <SelectItem value="per_person">לפי נפשות</SelectItem>
-                    <SelectItem value="private">פרטי (לא לחלוקה)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="submit" className="w-full">שמור</Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button
+          size="sm"
+          onClick={() => setAddOpen(true)}
+          className="rounded-full gradient-blue border-0"
+        >
+          <Plus className="ml-1 h-4 w-4" />
+          הוספת הוצאה
+        </Button>
+        <ExpenseDialog
+          open={addOpen}
+          onOpenChange={setAddOpen}
+          tripId={tripId}
+          participants={participants}
+          userId={userId}
+          isAdmin={isAdmin}
+          currentUserName={currentUserName}
+        />
       </div>
 
       {/* Expense List */}
       {expenses.map((exp) => (
         <div key={exp.id} className="flex items-center justify-between p-3 bg-card rounded-lg border">
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="text-sm font-medium">{exp.description}</div>
             <div className="text-xs text-muted-foreground">
               {(exp as any).payer?.full_name} · {EXPENSE_CATEGORIES[exp.category as ExpenseCategory] || exp.category}
             </div>
           </div>
-          <div className="text-left">
-            <div className="font-semibold text-sm">{formatCurrency(Number(exp.amount))}</div>
-            <div className="text-xs text-muted-foreground">
-              {new Date(exp.created_at).toLocaleDateString("he-IL")}
+          <div className="flex items-center gap-2">
+            <div className="text-left">
+              <div className="font-semibold text-sm">{formatCurrency(Number(exp.amount), exp.currency || "ILS")}</div>
+              <div className="text-xs text-muted-foreground">
+                {new Date(exp.created_at).toLocaleDateString("he-IL")}
+              </div>
             </div>
+            {(isAdmin || exp.paid_by === userId) && (
+              <DeleteButton table="expenses" recordId={exp.id} tripId={tripId} userId={userId} isAdmin={isAdmin} />
+            )}
           </div>
         </div>
       ))}
