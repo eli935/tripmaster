@@ -274,41 +274,27 @@ function OverviewTab({
     setTimeout(() => setCopied(false), 2000);
   }
 
+  const daysCount = Math.ceil(
+    (new Date(trip.end_date).getTime() - new Date(trip.start_date).getTime()) / (1000 * 60 * 60 * 24)
+  ) + 1;
+
   return (
-    <div className="space-y-4">
-      {/* Stats Cards */}
+    <div className="space-y-6">
+      {/* Premium Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="pt-4 text-center">
-            <div className="text-2xl font-bold">{participants.length}</div>
-            <div className="text-xs text-muted-foreground">משפחות</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 text-center">
-            <div className="text-2xl font-bold">{totalPeople}</div>
-            <div className="text-xs text-muted-foreground">נפשות</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 text-center">
-            <div className="text-2xl font-bold">
-              {Math.ceil(
-                (new Date(trip.end_date).getTime() - new Date(trip.start_date).getTime()) /
-                  (1000 * 60 * 60 * 24)
-              ) + 1}
-            </div>
-            <div className="text-xs text-muted-foreground">ימים</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 text-center">
-            <div className="text-2xl font-bold">
-              {new Date(trip.start_date).toLocaleDateString("he-IL", { day: "numeric", month: "short" })}
-            </div>
-            <div className="text-xs text-muted-foreground">תאריך יציאה</div>
-          </CardContent>
-        </Card>
+        {[
+          { value: participants.length, label: "משפחות", gradient: "from-blue-500 to-blue-600", icon: "👨‍👩‍👧‍👦" },
+          { value: totalPeople, label: "נפשות", gradient: "from-purple-500 to-purple-600", icon: "👥" },
+          { value: daysCount, label: "ימים", gradient: "from-teal-500 to-teal-600", icon: "📅" },
+          { value: new Date(trip.start_date).toLocaleDateString("he-IL", { day: "numeric", month: "short" }), label: "יציאה", gradient: "from-amber-500 to-orange-600", icon: "✈️" },
+        ].map((stat) => (
+          <div key={stat.label} className="relative overflow-hidden rounded-2xl p-4 glass glass-hover transition-all duration-300 animate-fade-in-up">
+            <div className="text-2xl mb-1">{stat.icon}</div>
+            <div className="text-2xl font-bold">{stat.value}</div>
+            <div className="text-xs text-muted-foreground">{stat.label}</div>
+            <div className={`absolute -top-6 -left-6 w-16 h-16 rounded-full bg-gradient-to-r ${stat.gradient} opacity-20 blur-xl`} />
+          </div>
+        ))}
       </div>
 
       {/* Invite Link */}
