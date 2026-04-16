@@ -279,40 +279,54 @@ export function DashboardContent({ profile, trips, userId }: DashboardContentPro
 
 function TripCard({ trip }: { trip: Trip & { role: string } }) {
   const status = STATUS_LABELS[trip.status as TripStatus];
+  const daysCount = Math.ceil(
+    (new Date(trip.end_date).getTime() - new Date(trip.start_date).getTime()) / (1000 * 60 * 60 * 24)
+  ) + 1;
+  const holidayEmoji: Record<string, string> = {
+    pesach: "🫓", sukkot: "🌿", rosh_hashana: "🍎", shavuot: "🥛", regular: "✈️"
+  };
 
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-      <a href={`/trip/${trip.id}`}>
-        <CardHeader className="pb-3">
+    <a href={`/trip/${trip.id}`} className="block group">
+      <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        {/* Gradient header */}
+        <div className="gradient-blue p-4 pb-8 text-white">
           <div className="flex items-start justify-between">
             <div>
-              <CardTitle className="text-base">{trip.name}</CardTitle>
-              <CardDescription className="flex items-center gap-1 mt-1">
+              <span className="text-3xl">{holidayEmoji[trip.holiday_type] || "✈️"}</span>
+              <h3 className="text-lg font-bold mt-1">{trip.name}</h3>
+              <p className="text-white/80 text-sm flex items-center gap-1 mt-0.5">
                 <MapPin className="h-3 w-3" />
                 {trip.destination}
-              </CardDescription>
+              </p>
             </div>
-            <div className="flex flex-col items-end gap-1">
-              <Badge variant="outline" className={status.color}>
-                {status.label}
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                {HOLIDAY_LABELS[trip.holiday_type as HolidayType]}
-              </Badge>
+            <Badge className={`${status.color} border-0 text-xs`}>
+              {status.label}
+            </Badge>
+          </div>
+        </div>
+        {/* Info pills */}
+        <div className="px-4 -mt-4 flex gap-2">
+          <div className="bg-white rounded-xl shadow-sm border px-3 py-2 text-center flex-1">
+            <div className="text-lg font-bold text-blue-600">{daysCount}</div>
+            <div className="text-[10px] text-muted-foreground">ימים</div>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border px-3 py-2 text-center flex-1">
+            <div className="text-lg font-bold text-purple-600">
+              {HOLIDAY_LABELS[trip.holiday_type as HolidayType]}
             </div>
+            <div className="text-[10px] text-muted-foreground">סוג</div>
           </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              {new Date(trip.start_date).toLocaleDateString("he-IL")} —{" "}
-              {new Date(trip.end_date).toLocaleDateString("he-IL")}
-            </span>
-            <ArrowLeft className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
-        </CardContent>
-      </a>
-    </Card>
+        </div>
+        {/* Footer */}
+        <div className="p-4 pt-3 flex items-center justify-between text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            {new Date(trip.start_date).toLocaleDateString("he-IL")} — {new Date(trip.end_date).toLocaleDateString("he-IL")}
+          </span>
+          <ArrowLeft className="h-4 w-4 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+      </div>
+    </a>
   );
 }

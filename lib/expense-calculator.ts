@@ -43,19 +43,38 @@ export function calculateBalances(
   }
 
   for (const expense of expenses) {
-    if (expense.split_type === "private") continue;
+    // Track private expenses separately (each family pays their own)
+    if (expense.split_type === "private") {
+      if (balances[expense.paid_by]) {
+        balances[expense.paid_by].totalPaid += expense.amount;
+        balances[expense.paid_by].totalOwed += expense.amount;
+      }
+      continue;
+    }
 
-    // Track what was paid
+    // Track what was paid for shared expenses
     if (balances[expense.paid_by]) {
       balances[expense.paid_by].totalPaid += expense.amount;
     }
 
     // Calculate what each person owes
-    if (expense.split_type === "custom" && expense.splits) {
-      for (const split of expense.splits) {
-        if (balances[split.profile_id]) {
-          balances[split.profile_id].totalOwed += split.amount;
+    if (expense.split_type === "custom") {
+      // Custom: if explicit splits exist, use them.
+      // Otherwise, the OTHER participants owe the full amount (e.g. "רחיפה עקשטיין מלא")
+      if (expense.splits && expense.splits.length > 0) {
+        for (const split of expense.splits) {
+          if (balances[split.profile_id]) {
+            balances[split.profile_id].totalOwed += split.amount;
+          }
         }
+      } else {
+        // Full amount owed by everyone except the payer
+        const others = participants.filter((p) => p.profile_id !== expense.paid_by);
+        const perOther = expense.amount / others.length;
+        for (const p of others) {
+          balances[p.profile_id].totalOwed += perOther;
+        }
+        // Payer owes nothing for this expense (but already tracked as paid)
       }
     } else if (expense.split_type === "per_person") {
       // Split by number of people (adults + children)

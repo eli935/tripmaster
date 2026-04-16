@@ -32,13 +32,15 @@ export function AppShell({ children, userName }: AppShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-white shadow-sm">
+      <header className="sticky top-0 z-50 glass border-b border-white/20 shadow-sm">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <Plane className="h-6 w-6 text-blue-600" />
-            <span className="font-bold text-lg">TripMaster</span>
+            <div className="h-8 w-8 rounded-lg gradient-blue flex items-center justify-center">
+              <Plane className="h-4 w-4 text-white" />
+            </div>
+            <span className="font-bold text-lg bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">TripMaster</span>
           </Link>
 
           {/* Desktop Nav */}

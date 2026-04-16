@@ -128,3 +128,37 @@
     @apply font-sans;
   }
 }
+
+/* Custom animations and gradients */
+@layer utilities {
+  .gradient-blue {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  .gradient-green {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  }
+  .gradient-orange {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  }
+  .gradient-gold {
+    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+  }
+  .gradient-purple {
+    background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+  }
+  .gradient-teal {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  }
+  .glass {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
