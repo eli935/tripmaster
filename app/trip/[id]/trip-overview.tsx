@@ -688,17 +688,34 @@ function ExpensesTab({
     toast.success("הוצאה נרשמה!");
   }
 
+  // Per-family breakdown
+  const sharedExpenses = expenses.filter((e) => e.split_type !== "private");
+  const totalShared = sharedExpenses.reduce((s, e) => s + Number(e.amount), 0);
+
   return (
     <div className="space-y-4">
-      {/* Summary */}
-      <Card>
-        <CardContent className="pt-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
-            <div className="text-xs text-muted-foreground">סה״כ הוצאות</div>
+      {/* Premium Summary */}
+      <div className="rounded-2xl gradient-blue p-6 text-white animate-fade-in-up">
+        <div className="text-center">
+          <div className="text-xs text-white/60 mb-1">סה״כ הוצאות טיול</div>
+          <div className="text-4xl font-bold tracking-tight">{formatCurrency(totalExpenses)}</div>
+          <div className="text-sm text-white/70 mt-1">{expenses.length} רשומות</div>
+        </div>
+      </div>
+
+      {/* Per-family cards */}
+      <div className="grid grid-cols-2 gap-3">
+        {balances.map((b) => (
+          <div key={b.profileId} className="glass glass-hover rounded-2xl p-4 animate-fade-in-up">
+            <div className="text-xs text-muted-foreground mb-1">{b.name}</div>
+            <div className="text-lg font-bold">{formatCurrency(b.totalPaid)}</div>
+            <div className="text-xs text-muted-foreground">שילם</div>
+            <div className={`text-sm font-semibold mt-2 ${b.balance > 0 ? "text-green-400" : b.balance < 0 ? "text-red-400" : "text-muted-foreground"}`}>
+              {b.balance > 0 ? `מגיע לו ${formatCurrency(b.balance)}` : b.balance < 0 ? `חייב ${formatCurrency(Math.abs(b.balance))}` : "מאוזן"}
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        ))}
+      </div>
 
       {/* Balance / Transfers */}
       {transfers.length > 0 && (
