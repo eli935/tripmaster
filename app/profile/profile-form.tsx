@@ -74,7 +74,7 @@ export function ProfileForm({ profile, userId }: ProfileFormProps) {
   }
 
   return (
-    <div className="max-w-lg mx-auto space-y-6">
+    <div className="max-w-lg mx-auto space-y-8">
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard")}>
           <ArrowRight className="h-4 w-4" />

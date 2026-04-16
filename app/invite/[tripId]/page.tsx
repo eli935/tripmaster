@@ -93,13 +93,15 @@ export default function InvitePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
+      <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
+      <Card className="w-full max-w-md relative z-10 border-border/50 bg-card/80 backdrop-blur-xl rounded-2xl">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-500/20">
-            <Plane className="h-8 w-8 text-blue-400" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl gradient-blue shadow-lg shadow-blue-500/25">
+            <Plane className="h-8 w-8 text-white" />
           </div>
-          <CardTitle>{trip.name}</CardTitle>
+          <CardTitle className="text-xl">{trip.name}</CardTitle>
           <CardDescription>
             {trip.destination} ·{" "}
             {new Date(trip.start_date).toLocaleDateString("he-IL")} —{" "}
