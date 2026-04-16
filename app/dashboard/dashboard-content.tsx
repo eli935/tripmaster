@@ -299,32 +299,54 @@ function TripCard({ trip }: { trip: Trip & { role: string } }) {
     pesach: "🫓", sukkot: "🌿", rosh_hashana: "🍎", shavuot: "🥛", regular: "✈️"
   };
 
+  // Destination image map
+  const destImages: Record<string, string> = {
+    מונטנגרו: "https://images.unsplash.com/photo-1596627116790-af6f46dddbae?w=800&q=80",
+    רומא: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=800&q=80",
+    אתונה: "https://images.unsplash.com/photo-1555993539-1732b0258235?w=800&q=80",
+  };
+  const heroImage = Object.keys(destImages).find((k) => trip.destination.includes(k))
+    ? destImages[Object.keys(destImages).find((k) => trip.destination.includes(k))!]
+    : null;
+
   return (
     <a href={`/trip/${trip.id}`} className="block group">
-      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1">
-        {/* Gradient header */}
-        <div className="gradient-blue p-4 pb-8 text-white">
-          <div className="flex items-start justify-between">
+      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 hover:-translate-y-1">
+        {/* Hero image with overlay */}
+        <div className="relative h-40 overflow-hidden">
+          {heroImage ? (
+            <img
+              src={heroImage}
+              alt={trip.destination}
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+            />
+          ) : (
+            <div className="w-full h-full gradient-blue" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          <div className="absolute inset-0 p-4 flex flex-col justify-between text-white">
+            <div className="flex items-start justify-between">
+              <span className="text-3xl drop-shadow-lg">{holidayEmoji[trip.holiday_type] || "✈️"}</span>
+              <Badge className={`${status.color} border-0 text-xs backdrop-blur-sm`}>
+                {status.label}
+              </Badge>
+            </div>
             <div>
-              <span className="text-3xl">{holidayEmoji[trip.holiday_type] || "✈️"}</span>
-              <h3 className="text-lg font-bold mt-1">{trip.name}</h3>
-              <p className="text-white/80 text-sm flex items-center gap-1 mt-0.5">
+              <h3 className="text-xl font-bold drop-shadow-lg">{trip.name}</h3>
+              <p className="text-white/90 text-sm flex items-center gap-1 mt-0.5">
                 <MapPin className="h-3 w-3" />
                 {trip.destination}
               </p>
             </div>
-            <Badge className={`${status.color} border-0 text-xs`}>
-              {status.label}
-            </Badge>
           </div>
         </div>
         {/* Info pills */}
-        <div className="px-4 -mt-4 flex gap-2">
-          <div className="bg-card rounded-xl shadow-sm border border-border/50 px-3 py-2 text-center flex-1">
+        <div className="px-4 pt-4 flex gap-2">
+          <div className="glass rounded-xl px-3 py-2 text-center flex-1">
             <div className="text-lg font-bold text-blue-400">{daysCount}</div>
             <div className="text-[10px] text-muted-foreground">ימים</div>
           </div>
-          <div className="bg-card rounded-xl shadow-sm border border-border/50 px-3 py-2 text-center flex-1">
+          <div className="glass rounded-xl px-3 py-2 text-center flex-1">
             <div className="text-lg font-bold text-purple-400">
               {HOLIDAY_LABELS[trip.holiday_type as HolidayType]}
             </div>

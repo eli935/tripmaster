@@ -58,9 +58,11 @@ import { TripSummary } from "./trip-summary";
 import { useRealtimeTrip } from "@/lib/hooks/use-realtime";
 import { HolidayBanner } from "@/components/holiday-banner";
 import { FileManager } from "./file-manager";
+import { DestinationOverview } from "./destination-overview";
 import { FadeUp, StaggerContainer, StaggerItem, GlowPulse } from "@/components/motion";
-import { Paperclip } from "lucide-react";
+import { Paperclip, Compass } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import type { DestinationInfo } from "@/lib/destinations";
 import {
   DAY_TYPE_LABELS,
   DAY_TYPE_COLORS,
@@ -93,10 +95,12 @@ interface TripOverviewProps {
   shopping: ShoppingItem[];
   lessons: LessonLearned[];
   files: any[];
+  destination: DestinationInfo | null;
+  rates: Record<string, number> | null;
   userId: string;
 }
 
-type Tab = "overview" | "meals" | "equipment" | "shopping" | "expenses" | "files" | "lessons" | "summary" | "settings";
+type Tab = "destination" | "overview" | "meals" | "equipment" | "shopping" | "expenses" | "files" | "lessons" | "summary" | "settings";
 
 export function TripOverview({
   trip,
@@ -109,9 +113,11 @@ export function TripOverview({
   shopping,
   lessons,
   files,
+  destination,
+  rates,
   userId,
 }: TripOverviewProps) {
-  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [activeTab, setActiveTab] = useState<Tab>(destination ? "destination" : "overview");
   const router = useRouter();
   const supabase = createClient();
 
@@ -128,6 +134,7 @@ export function TripOverview({
   );
 
   const tabs = [
+    ...(destination ? [{ id: "destination" as Tab, label: "יעד", icon: Compass, count: 0 }] : []),
     { id: "overview" as Tab, label: "סקירה", icon: Users, count: participants.length },
     { id: "meals" as Tab, label: "ארוחות", icon: ChefHat, count: meals.length },
     { id: "equipment" as Tab, label: "ציוד", icon: Package, count: equipment.length },
@@ -193,6 +200,9 @@ export function TripOverview({
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         >
+          {activeTab === "destination" && destination && (
+            <DestinationOverview destination={destination} rates={rates} />
+          )}
           {activeTab === "overview" && (
             <OverviewTab
               trip={trip}

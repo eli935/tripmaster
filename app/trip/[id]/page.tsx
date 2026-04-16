@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { AppShell } from "@/components/app-shell";
 import { TripOverview } from "./trip-overview";
+import { findDestination } from "@/lib/destinations";
+import { getExchangeRate } from "@/lib/currency";
 
 export default async function TripPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -81,6 +83,14 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
     files = filesData || [];
   } catch {}
 
+  // Destination info + live currency rates
+  const destination = findDestination(trip.destination, trip.country_code);
+  let rates: Record<string, number> | null = null;
+  if (destination) {
+    const exchange = await getExchangeRate("ILS", [destination.currency, "USD", "EUR"]);
+    rates = exchange?.rates || null;
+  }
+
   return (
     <AppShell userName={profile?.full_name}>
       <TripOverview
@@ -94,6 +104,8 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
         shopping={shopping || []}
         lessons={lessons || []}
         files={files}
+        destination={destination}
+        rates={rates}
         userId={user.id}
       />
     </AppShell>
