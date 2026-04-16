@@ -147,12 +147,12 @@ export function DashboardContent({ profile, trips, userId }: DashboardContentPro
   const pastTrips = trips.filter((t) => t.status === "completed");
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">שלום {profile?.full_name}!</h1>
-          <p className="text-muted-foreground">הטיולים שלך</p>
+    <div className="space-y-10">
+      {/* Hero Header */}
+      <div className="flex items-end justify-between pt-4">
+        <div className="animate-fade-in-up">
+          <p className="text-sm text-muted-foreground mb-1">שלום,</p>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{profile?.full_name}</h1>
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

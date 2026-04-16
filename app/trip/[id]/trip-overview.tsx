@@ -57,6 +57,8 @@ import { WhatsAppSender } from "./whatsapp-sender";
 import { TripSummary } from "./trip-summary";
 import { useRealtimeTrip } from "@/lib/hooks/use-realtime";
 import { HolidayBanner } from "@/components/holiday-banner";
+import { FileManager } from "./file-manager";
+import { Paperclip } from "lucide-react";
 import {
   DAY_TYPE_LABELS,
   DAY_TYPE_COLORS,
@@ -88,10 +90,11 @@ interface TripOverviewProps {
   expenses: Expense[];
   shopping: ShoppingItem[];
   lessons: LessonLearned[];
+  files: any[];
   userId: string;
 }
 
-type Tab = "overview" | "meals" | "equipment" | "shopping" | "expenses" | "lessons" | "summary" | "settings";
+type Tab = "overview" | "meals" | "equipment" | "shopping" | "expenses" | "files" | "lessons" | "summary" | "settings";
 
 export function TripOverview({
   trip,
@@ -103,6 +106,7 @@ export function TripOverview({
   expenses,
   shopping,
   lessons,
+  files,
   userId,
 }: TripOverviewProps) {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -127,24 +131,24 @@ export function TripOverview({
     { id: "equipment" as Tab, label: "ציוד", icon: Package, count: equipment.length },
     { id: "shopping" as Tab, label: "קניות", icon: ShoppingCart, count: shopping.length },
     { id: "expenses" as Tab, label: "הוצאות", icon: Receipt, count: expenses.length },
+    { id: "files" as Tab, label: "קבצים", icon: Paperclip, count: files.length },
     { id: "lessons" as Tab, label: "לקחים", icon: Lightbulb, count: lessons.length },
     { id: "summary" as Tab, label: "סיכום", icon: FileText, count: 0 },
     { id: "settings" as Tab, label: "הגדרות", icon: Settings, count: 0 },
   ];
 
   return (
-    <div className="space-y-4">
-      {/* Trip Header */}
-      <div className="flex items-center gap-2 mb-2">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard")}>
-          <ArrowRight className="h-4 w-4" />
+    <div className="space-y-6">
+      {/* Trip Header — Premium */}
+      <div className="animate-fade-in-up">
+        <Button variant="ghost" size="sm" onClick={() => router.push("/dashboard")} className="mb-3 text-muted-foreground hover:text-foreground">
+          <ArrowRight className="ml-1 h-4 w-4" />
+          חזרה
         </Button>
-        <div>
-          <h1 className="text-xl font-bold">{trip.name}</h1>
-          <p className="text-sm text-muted-foreground">
-            {trip.destination} · {totalPeople} נפשות · {participants.length} משפחות
-          </p>
-        </div>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{trip.name}</h1>
+        <p className="text-muted-foreground mt-1">
+          {trip.destination} · {totalPeople} נפשות · {participants.length} משפחות
+        </p>
       </div>
 
       {/* Holiday Banner */}
@@ -152,24 +156,26 @@ export function TripOverview({
         <HolidayBanner holidayType={trip.holiday_type as any} />
       )}
 
-      {/* Tab Navigation */}
-      <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide">
+      {/* Tab Navigation — Premium */}
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
         {tabs.map((tab) => (
-          <Button
+          <button
             key={tab.id}
-            variant={activeTab === tab.id ? "default" : "outline"}
-            size="sm"
             onClick={() => setActiveTab(tab.id)}
-            className="whitespace-nowrap"
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 ${
+              activeTab === tab.id
+                ? "gradient-blue text-white shadow-lg shadow-blue-500/25"
+                : "text-muted-foreground hover:text-foreground glass glass-hover"
+            }`}
           >
             <tab.icon className="ml-1 h-4 w-4" />
             {tab.label}
             {tab.count > 0 && (
-              <Badge variant="secondary" className="mr-1 h-5 px-1.5 text-xs">
+              <span className={`mr-1 text-xs ${activeTab === tab.id ? "text-white/80" : "text-muted-foreground"}`}>
                 {tab.count}
-              </Badge>
+              </span>
             )}
-          </Button>
+          </button>
         ))}
       </div>
 
@@ -203,6 +209,9 @@ export function TripOverview({
           tripId={trip.id}
           userId={userId}
         />
+      )}
+      {activeTab === "files" && (
+        <FileManager files={files} tripId={trip.id} userId={userId} />
       )}
       {activeTab === "lessons" && (
         <LessonsLearnedTab lessons={lessons} tripId={trip.id} userId={userId} />

@@ -70,6 +70,17 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
     .eq("trip_id", id)
     .order("created_at", { ascending: false });
 
+  // Files (may not exist yet - table created later)
+  let files: any[] = [];
+  try {
+    const { data: filesData } = await supabase
+      .from("trip_files")
+      .select("*")
+      .eq("trip_id", id)
+      .order("created_at", { ascending: false });
+    files = filesData || [];
+  } catch {}
+
   return (
     <AppShell userName={profile?.full_name}>
       <TripOverview
@@ -82,6 +93,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
         expenses={expenses || []}
         shopping={shopping || []}
         lessons={lessons || []}
+        files={files}
         userId={user.id}
       />
     </AppShell>
