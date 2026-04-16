@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plane, Loader2, MapPin, Calendar, Users, Shield, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -49,19 +50,34 @@ export default function LoginPage() {
         {/* Hero Section */}
         <div className="flex-1 flex flex-col items-center justify-center px-4 pb-8">
           {/* Logo */}
-          <div className="mb-8 text-center">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl gradient-blue shadow-2xl shadow-blue-500/30">
+          <motion.div
+            className="mb-8 text-center"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <motion.div
+              className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl gradient-blue shadow-2xl shadow-blue-500/30"
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
+            >
               <Plane className="h-10 w-10 text-white" />
-            </div>
+            </motion.div>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
               <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-teal-400 bg-clip-text text-transparent">
                 TripMaster
               </span>
             </h1>
-            <p className="mt-3 text-lg text-muted-foreground max-w-md mx-auto">
+            <motion.p
+              className="mt-3 text-lg text-muted-foreground max-w-md mx-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
+            >
               חופשה מושלמת מתחילה בתכנון מושלם
-            </p>
-          </div>
+            </motion.p>
+          </motion.div>
 
           {/* Login Card */}
           <div className="w-full max-w-sm">

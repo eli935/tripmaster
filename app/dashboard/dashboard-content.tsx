@@ -28,6 +28,7 @@ import {
 import { toast } from "sonner";
 import type { Profile, Trip, HolidayType, TripStatus } from "@/lib/supabase/types";
 import { generateTripDays } from "@/lib/hebrew-calendar";
+import { FadeUp, StaggerContainer, StaggerItem, HoverScale } from "@/components/motion";
 
 const STATUS_LABELS: Record<TripStatus, { label: string; color: string }> = {
   planning: { label: "בתכנון", color: "bg-yellow-100 text-yellow-800" },
@@ -150,10 +151,10 @@ export function DashboardContent({ profile, trips, userId }: DashboardContentPro
     <div className="space-y-10">
       {/* Hero Header */}
       <div className="flex items-end justify-between pt-4">
-        <div className="animate-fade-in-up">
+        <FadeUp>
           <p className="text-sm text-muted-foreground mb-1">שלום,</p>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{profile?.full_name}</h1>
-        </div>
+        </FadeUp>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger
@@ -249,26 +250,38 @@ export function DashboardContent({ profile, trips, userId }: DashboardContentPro
       ) : (
         <>
           {activeTrips.length > 0 && (
-            <div className="space-y-3">
-              <h2 className="text-lg font-semibold">טיולים פעילים</h2>
-              <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-4">
+              <FadeUp delay={0.2}>
+                <h2 className="text-lg font-semibold">טיולים פעילים</h2>
+              </FadeUp>
+              <StaggerContainer className="grid gap-4 md:grid-cols-2" delay={0.3}>
                 {activeTrips.map((trip) => (
-                  <TripCard key={trip.id} trip={trip} />
+                  <StaggerItem key={trip.id}>
+                    <HoverScale>
+                      <TripCard trip={trip} />
+                    </HoverScale>
+                  </StaggerItem>
                 ))}
-              </div>
+              </StaggerContainer>
             </div>
           )}
 
           {pastTrips.length > 0 && (
-            <div className="space-y-3">
-              <h2 className="text-lg font-semibold text-muted-foreground">
-                טיולים קודמים
-              </h2>
-              <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-4">
+              <FadeUp delay={0.4}>
+                <h2 className="text-lg font-semibold text-muted-foreground">
+                  טיולים קודמים
+                </h2>
+              </FadeUp>
+              <StaggerContainer className="grid gap-4 md:grid-cols-2" delay={0.5}>
                 {pastTrips.map((trip) => (
-                  <TripCard key={trip.id} trip={trip} />
+                  <StaggerItem key={trip.id}>
+                    <HoverScale>
+                      <TripCard trip={trip} />
+                    </HoverScale>
+                  </StaggerItem>
                 ))}
-              </div>
+              </StaggerContainer>
             </div>
           )}
         </>

@@ -58,7 +58,9 @@ import { TripSummary } from "./trip-summary";
 import { useRealtimeTrip } from "@/lib/hooks/use-realtime";
 import { HolidayBanner } from "@/components/holiday-banner";
 import { FileManager } from "./file-manager";
+import { FadeUp, StaggerContainer, StaggerItem, GlowPulse } from "@/components/motion";
 import { Paperclip } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   DAY_TYPE_LABELS,
   DAY_TYPE_COLORS,
@@ -159,10 +161,13 @@ export function TripOverview({
       {/* Tab Navigation — Premium */}
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
         {tabs.map((tab) => (
-          <button
+          <motion.button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 ${
+            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.03 }}
+            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors duration-300 ${
               activeTab === tab.id
                 ? "gradient-blue text-white shadow-lg shadow-blue-500/25"
                 : "text-muted-foreground hover:text-foreground glass glass-hover"
@@ -175,79 +180,89 @@ export function TripOverview({
                 {tab.count}
               </span>
             )}
-          </button>
+          </motion.button>
         ))}
       </div>
 
-      {/* Tab Content */}
-      {activeTab === "overview" && (
-        <OverviewTab
-          trip={trip}
-          participants={participants}
-          totalPeople={totalPeople}
-          userId={userId}
-        />
-      )}
-      {activeTab === "meals" && (
-        <MealPlanner days={days} meals={meals} mealItems={mealItems} tripId={trip.id} totalPeople={totalPeople} />
-      )}
-      {activeTab === "equipment" && (
-        <EquipmentTab
-          equipment={equipment}
-          tripId={trip.id}
-          totalPeople={totalPeople}
-          participants={participants}
-        />
-      )}
-      {activeTab === "shopping" && (
-        <ShoppingTab shopping={shopping} tripId={trip.id} mealItems={mealItems} totalPeople={totalPeople} />
-      )}
-      {activeTab === "expenses" && (
-        <ExpensesTab
-          expenses={expenses}
-          participants={participants}
-          tripId={trip.id}
-          userId={userId}
-        />
-      )}
-      {activeTab === "files" && (
-        <FileManager files={files} tripId={trip.id} userId={userId} />
-      )}
-      {activeTab === "lessons" && (
-        <LessonsLearnedTab lessons={lessons} tripId={trip.id} userId={userId} />
-      )}
-      {activeTab === "summary" && (
-        <TripSummary
-          trip={trip}
-          participants={participants}
-          days={days}
-          meals={meals}
-          equipment={equipment}
-          expenses={expenses}
-          shopping={shopping}
-          lessons={lessons}
-        />
-      )}
-      {activeTab === "settings" && (
-        <div className="space-y-4">
-          <WhatsAppSender
-            tripId={trip.id}
-            tripName={trip.name}
-            participantCount={participants.length}
-            remainingShoppingItems={shopping.filter((s) => !s.is_purchased).length}
-            daysUntilTrip={Math.ceil(
-              (new Date(trip.start_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-            )}
-            isAdmin={isAdmin}
-          />
-          <TripSettings
-            trip={trip}
-            participants={participants}
-            userId={userId}
-            isAdmin={isAdmin}
-          />
-        </div>
-      )}
+      {/* Tab Content with smooth transitions */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {activeTab === "overview" && (
+            <OverviewTab
+              trip={trip}
+              participants={participants}
+              totalPeople={totalPeople}
+              userId={userId}
+            />
+          )}
+          {activeTab === "meals" && (
+            <MealPlanner days={days} meals={meals} mealItems={mealItems} tripId={trip.id} totalPeople={totalPeople} />
+          )}
+          {activeTab === "equipment" && (
+            <EquipmentTab
+              equipment={equipment}
+              tripId={trip.id}
+              totalPeople={totalPeople}
+              participants={participants}
+            />
+          )}
+          {activeTab === "shopping" && (
+            <ShoppingTab shopping={shopping} tripId={trip.id} mealItems={mealItems} totalPeople={totalPeople} />
+          )}
+          {activeTab === "expenses" && (
+            <ExpensesTab
+              expenses={expenses}
+              participants={participants}
+              tripId={trip.id}
+              userId={userId}
+            />
+          )}
+          {activeTab === "files" && (
+            <FileManager files={files} tripId={trip.id} userId={userId} />
+          )}
+          {activeTab === "lessons" && (
+            <LessonsLearnedTab lessons={lessons} tripId={trip.id} userId={userId} />
+          )}
+          {activeTab === "summary" && (
+            <TripSummary
+              trip={trip}
+              participants={participants}
+              days={days}
+              meals={meals}
+              equipment={equipment}
+              expenses={expenses}
+              shopping={shopping}
+              lessons={lessons}
+            />
+          )}
+          {activeTab === "settings" && (
+            <div className="space-y-4">
+              <WhatsAppSender
+                tripId={trip.id}
+                tripName={trip.name}
+                participantCount={participants.length}
+                remainingShoppingItems={shopping.filter((s) => !s.is_purchased).length}
+                daysUntilTrip={Math.ceil(
+                  (new Date(trip.start_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                )}
+                isAdmin={isAdmin}
+              />
+              <TripSettings
+                trip={trip}
+                participants={participants}
+                userId={userId}
+                isAdmin={isAdmin}
+              />
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
@@ -281,21 +296,23 @@ function OverviewTab({
   return (
     <div className="space-y-6">
       {/* Premium Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-3" delay={0.1}>
         {[
           { value: participants.length, label: "משפחות", gradient: "from-blue-500 to-blue-600", icon: "👨‍👩‍👧‍👦" },
           { value: totalPeople, label: "נפשות", gradient: "from-purple-500 to-purple-600", icon: "👥" },
           { value: daysCount, label: "ימים", gradient: "from-teal-500 to-teal-600", icon: "📅" },
           { value: new Date(trip.start_date).toLocaleDateString("he-IL", { day: "numeric", month: "short" }), label: "יציאה", gradient: "from-amber-500 to-orange-600", icon: "✈️" },
         ].map((stat) => (
-          <div key={stat.label} className="relative overflow-hidden rounded-2xl p-4 glass glass-hover transition-all duration-300 animate-fade-in-up">
-            <div className="text-2xl mb-1">{stat.icon}</div>
-            <div className="text-2xl font-bold">{stat.value}</div>
-            <div className="text-xs text-muted-foreground">{stat.label}</div>
-            <div className={`absolute -top-6 -left-6 w-16 h-16 rounded-full bg-gradient-to-r ${stat.gradient} opacity-20 blur-xl`} />
-          </div>
+          <StaggerItem key={stat.label}>
+            <div className="relative overflow-hidden rounded-2xl p-4 glass glass-hover transition-all duration-300">
+              <div className="text-2xl mb-1">{stat.icon}</div>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <div className="text-xs text-muted-foreground">{stat.label}</div>
+              <div className={`absolute -top-6 -left-6 w-16 h-16 rounded-full bg-gradient-to-r ${stat.gradient} opacity-20 blur-xl`} />
+            </div>
+          </StaggerItem>
         ))}
-      </div>
+      </StaggerContainer>
 
       {/* Invite Link */}
       <Card>
@@ -695,13 +712,13 @@ function ExpensesTab({
   return (
     <div className="space-y-4">
       {/* Premium Summary */}
-      <div className="rounded-2xl gradient-blue p-6 text-white animate-fade-in-up">
+      <GlowPulse className="rounded-2xl gradient-blue p-6 text-white">
         <div className="text-center">
           <div className="text-xs text-white/60 mb-1">סה״כ הוצאות טיול</div>
           <div className="text-4xl font-bold tracking-tight">{formatCurrency(totalExpenses)}</div>
           <div className="text-sm text-white/70 mt-1">{expenses.length} רשומות</div>
         </div>
-      </div>
+      </GlowPulse>
 
       {/* Per-family cards */}
       <div className="grid grid-cols-2 gap-3">
