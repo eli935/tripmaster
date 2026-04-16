@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
 import type { HolidayType } from "@/lib/supabase/types";
 
 const HOLIDAY_BANNERS: Partial<Record<HolidayType, {
@@ -67,23 +66,21 @@ export function HolidayBanner({ holidayType }: HolidayBannerProps) {
   if (!banner) return null;
 
   return (
-    <Card className={`border ${banner.color}`}>
-      <CardContent className="pt-3 pb-3">
-        <div className="flex items-start gap-2">
-          <span className="text-2xl">{banner.emoji}</span>
-          <div>
-            <div className="font-semibold text-sm">{banner.title} — תזכורות</div>
-            <ul className="mt-1 space-y-0.5">
-              {banner.reminders.map((r, i) => (
-                <li key={i} className="text-xs text-muted-foreground flex gap-1">
-                  <span>•</span>
-                  <span>{r}</span>
-                </li>
-              ))}
-            </ul>
+    <div className="rounded-2xl glass glass-hover p-4 animate-fade-in-up animate-delay-200">
+      <div className="flex items-start gap-3">
+        <div className="text-3xl animate-float">{banner.emoji}</div>
+        <div>
+          <div className="font-semibold text-sm">{banner.title}</div>
+          <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-1.5">
+            {banner.reminders.map((r, i) => (
+              <div key={i} className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                <span className="text-blue-400 mt-0.5">›</span>
+                <span>{r}</span>
+              </div>
+            ))}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
