@@ -91,6 +91,16 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
     rates = exchange?.rates || null;
   }
 
+  // Permissions (may not exist yet)
+  let permissions: any[] = [];
+  try {
+    const { data: permsData } = await supabase
+      .from("trip_permissions")
+      .select("*")
+      .eq("trip_id", id);
+    permissions = permsData || [];
+  } catch {}
+
   return (
     <AppShell userName={profile?.full_name}>
       <TripOverview
@@ -106,6 +116,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
         files={files}
         destination={destination}
         rates={rates}
+        permissions={permissions}
         userId={user.id}
       />
     </AppShell>

@@ -59,6 +59,8 @@ import { useRealtimeTrip } from "@/lib/hooks/use-realtime";
 import { HolidayBanner } from "@/components/holiday-banner";
 import { FileManager } from "./file-manager";
 import { DestinationOverview } from "./destination-overview";
+import { PermissionsManager } from "./permissions-manager";
+import type { TripPermission } from "@/lib/permissions";
 import { FadeUp, StaggerContainer, StaggerItem, GlowPulse } from "@/components/motion";
 import { Paperclip, Compass } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -97,6 +99,7 @@ interface TripOverviewProps {
   files: any[];
   destination: DestinationInfo | null;
   rates: Record<string, number> | null;
+  permissions: TripPermission[];
   userId: string;
 }
 
@@ -115,6 +118,7 @@ export function TripOverview({
   files,
   destination,
   rates,
+  permissions,
   userId,
 }: TripOverviewProps) {
   const [activeTab, setActiveTab] = useState<Tab>(destination ? "destination" : "overview");
@@ -133,18 +137,33 @@ export function TripOverview({
     (p) => p.profile_id === userId && p.role === "admin"
   );
 
-  const tabs = [
-    ...(destination ? [{ id: "destination" as Tab, label: "יעד", icon: Compass, count: 0 }] : []),
-    { id: "overview" as Tab, label: "סקירה", icon: Users, count: participants.length },
-    { id: "meals" as Tab, label: "ארוחות", icon: ChefHat, count: meals.length },
-    { id: "equipment" as Tab, label: "ציוד", icon: Package, count: equipment.length },
-    { id: "shopping" as Tab, label: "קניות", icon: ShoppingCart, count: shopping.length },
-    { id: "expenses" as Tab, label: "הוצאות", icon: Receipt, count: expenses.length },
-    { id: "files" as Tab, label: "קבצים", icon: Paperclip, count: files.length },
-    { id: "lessons" as Tab, label: "לקחים", icon: Lightbulb, count: lessons.length },
+  // Get current user's permissions
+  const myPerms = permissions.find((p) => p.profile_id === userId);
+  // If admin, all permissions; else use actual perms
+  const canSee = {
+    destination: isAdmin || (myPerms?.can_see_destination ?? true),
+    overview: isAdmin || (myPerms?.can_see_overview ?? true),
+    meals: isAdmin || (myPerms?.can_see_meals ?? true),
+    equipment: isAdmin || (myPerms?.can_see_equipment ?? true),
+    shopping: isAdmin || (myPerms?.can_see_shopping ?? true),
+    expenses: isAdmin || (myPerms?.can_see_expenses ?? true),
+    files: isAdmin || (myPerms?.can_see_files ?? true),
+    lessons: isAdmin || (myPerms?.can_see_lessons ?? true),
+  };
+
+  const allTabs = [
+    ...(destination && canSee.destination ? [{ id: "destination" as Tab, label: "יעד", icon: Compass, count: 0 }] : []),
+    ...(canSee.overview ? [{ id: "overview" as Tab, label: "סקירה", icon: Users, count: participants.length }] : []),
+    ...(canSee.meals ? [{ id: "meals" as Tab, label: "ארוחות", icon: ChefHat, count: meals.length }] : []),
+    ...(canSee.equipment ? [{ id: "equipment" as Tab, label: "ציוד", icon: Package, count: equipment.length }] : []),
+    ...(canSee.shopping ? [{ id: "shopping" as Tab, label: "קניות", icon: ShoppingCart, count: shopping.length }] : []),
+    ...(canSee.expenses ? [{ id: "expenses" as Tab, label: "הוצאות", icon: Receipt, count: expenses.length }] : []),
+    ...(canSee.files ? [{ id: "files" as Tab, label: "קבצים", icon: Paperclip, count: files.length }] : []),
+    ...(canSee.lessons ? [{ id: "lessons" as Tab, label: "לקחים", icon: Lightbulb, count: lessons.length }] : []),
     { id: "summary" as Tab, label: "סיכום", icon: FileText, count: 0 },
-    { id: "settings" as Tab, label: "הגדרות", icon: Settings, count: 0 },
+    ...(isAdmin ? [{ id: "settings" as Tab, label: "הגדרות", icon: Settings, count: 0 }] : []),
   ];
+  const tabs = allTabs;
 
   return (
     <div className="space-y-6">
@@ -227,7 +246,11 @@ export function TripOverview({
           )}
           {activeTab === "expenses" && (
             <ExpensesTab
-              expenses={expenses}
+              expenses={
+                isAdmin || (myPerms?.can_see_other_expenses ?? true)
+                  ? expenses
+                  : expenses.filter((e) => e.paid_by === userId)
+              }
               participants={participants}
               tripId={trip.id}
               userId={userId}
@@ -253,6 +276,13 @@ export function TripOverview({
           )}
           {activeTab === "settings" && (
             <div className="space-y-4">
+              {isAdmin && (
+                <PermissionsManager
+                  tripId={trip.id}
+                  participants={participants}
+                  permissions={permissions}
+                />
+              )}
               <WhatsAppSender
                 tripId={trip.id}
                 tripName={trip.name}
