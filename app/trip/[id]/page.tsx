@@ -3,6 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { AppShell } from "@/components/app-shell";
 import { TripOverview } from "./trip-overview";
 import { findDestination } from "@/lib/destinations";
+import { getOrGenerateDestination } from "@/lib/destination-generator";
 import { getExchangeRate } from "@/lib/currency";
 
 export default async function TripPage({ params }: { params: Promise<{ id: string }> }) {
@@ -75,7 +76,11 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
       ? supabase.from("meals").select("*").in("trip_day_id", dayIds).order("meal_type")
       : Promise.resolve({ data: [] }),
     (async () => {
-      const destination = findDestination(trip.destination, trip.country_code);
+      // Try local DB first (fast), fallback to cache + AI generation
+      let destination = findDestination(trip.destination, trip.country_code);
+      if (!destination) {
+        destination = await getOrGenerateDestination(supabase, trip.destination, trip.country_code);
+      }
       if (!destination) return { destination: null, rates: null };
       const exchange = await getExchangeRate("ILS", [destination.currency, "USD", "EUR"]);
       return { destination, rates: exchange?.rates || null };
