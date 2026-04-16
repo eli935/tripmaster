@@ -79,22 +79,29 @@ export function AppShell({ children, userName }: AppShellProps) {
 
         {/* Mobile Nav */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t bg-card p-4 space-y-2">
+          <div className="md:hidden border-t border-border/50 bg-card/95 backdrop-blur-xl p-4 space-y-1">
             <Link
               href="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
               className={cn(
-                "block px-3 py-2 rounded-md text-sm",
+                "block px-4 py-3 rounded-xl text-sm transition-colors",
                 pathname === "/dashboard"
-                  ? "bg-blue-50 text-blue-400 font-medium"
-                  : "text-gray-700"
+                  ? "glass text-blue-400 font-medium"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               ראשי
             </Link>
+            <Link
+              href="/profile"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-4 py-3 rounded-xl text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              פרופיל
+            </Link>
             <button
               onClick={handleLogout}
-              className="block w-full text-start px-3 py-2 rounded-md text-sm text-red-400"
+              className="block w-full text-start px-4 py-3 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-colors"
             >
               יציאה
             </button>
@@ -103,7 +110,7 @@ export function AppShell({ children, userName }: AppShellProps) {
       </header>
 
       {/* Main Content */}
-      <main className="mx-auto max-w-5xl p-4">{children}</main>
+      <main className="mx-auto max-w-5xl px-4 py-6 md:py-8">{children}</main>
     </div>
   );
 }
