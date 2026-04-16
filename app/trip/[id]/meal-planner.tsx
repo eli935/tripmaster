@@ -223,7 +223,7 @@ export function MealPlanner({ days, meals, mealItems, tripId, totalPeople }: Mea
                     return (
                     <div
                       key={meal.id}
-                      className="flex items-center justify-between p-2 bg-gray-50 rounded-md cursor-pointer hover:bg-gray-100 transition-colors"
+                      className="flex items-center justify-between p-2 bg-secondary rounded-md cursor-pointer hover:bg-accent transition-colors"
                       onClick={() => setEditingMeal(meal)}
                     >
                       <div className="flex items-center gap-2">
@@ -243,7 +243,7 @@ export function MealPlanner({ days, meals, mealItems, tripId, totalPeople }: Mea
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-red-400 hover:text-red-600"
+                          className="h-7 w-7 text-red-400 hover:text-red-400"
                           onClick={(e) => { e.stopPropagation(); deleteMeal(meal.id); }}
                         >
                           <Trash2 className="h-3 w-3" />

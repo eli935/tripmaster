@@ -33,7 +33,7 @@ const STATUS_LABELS: Record<TripStatus, { label: string; color: string }> = {
   planning: { label: "בתכנון", color: "bg-yellow-100 text-yellow-800" },
   active: { label: "פעיל", color: "bg-green-100 text-green-800" },
   completed: { label: "הסתיים", color: "bg-gray-100 text-gray-800" },
-  review: { label: "הפקת לקחים", color: "bg-blue-100 text-blue-800" },
+  review: { label: "הפקת לקחים", color: "bg-blue-500/20 text-blue-800" },
 };
 
 const HOLIDAY_LABELS: Record<HolidayType, string> = {
@@ -288,7 +288,7 @@ function TripCard({ trip }: { trip: Trip & { role: string } }) {
 
   return (
     <a href={`/trip/${trip.id}`} className="block group">
-      <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1">
         {/* Gradient header */}
         <div className="gradient-blue p-4 pb-8 text-white">
           <div className="flex items-start justify-between">
@@ -307,12 +307,12 @@ function TripCard({ trip }: { trip: Trip & { role: string } }) {
         </div>
         {/* Info pills */}
         <div className="px-4 -mt-4 flex gap-2">
-          <div className="bg-white rounded-xl shadow-sm border px-3 py-2 text-center flex-1">
-            <div className="text-lg font-bold text-blue-600">{daysCount}</div>
+          <div className="bg-card rounded-xl shadow-sm border border-border/50 px-3 py-2 text-center flex-1">
+            <div className="text-lg font-bold text-blue-400">{daysCount}</div>
             <div className="text-[10px] text-muted-foreground">ימים</div>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border px-3 py-2 text-center flex-1">
-            <div className="text-lg font-bold text-purple-600">
+          <div className="bg-card rounded-xl shadow-sm border border-border/50 px-3 py-2 text-center flex-1">
+            <div className="text-lg font-bold text-purple-400">
               {HOLIDAY_LABELS[trip.holiday_type as HolidayType]}
             </div>
             <div className="text-[10px] text-muted-foreground">סוג</div>

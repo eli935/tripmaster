@@ -32,9 +32,9 @@ const CATEGORIES = [
 ];
 
 const ACTIONS = [
-  { value: "add", label: "להוסיף", icon: PackagePlus, color: "text-green-600" },
-  { value: "remove", label: "להוריד", icon: PackageMinus, color: "text-red-600" },
-  { value: "increase", label: "להגדיל כמות", icon: TrendingUp, color: "text-blue-600" },
+  { value: "add", label: "להוסיף", icon: PackagePlus, color: "text-green-400" },
+  { value: "remove", label: "להוריד", icon: PackageMinus, color: "text-red-400" },
+  { value: "increase", label: "להגדיל כמות", icon: TrendingUp, color: "text-blue-400" },
   { value: "decrease", label: "להקטין כמות", icon: TrendingDown, color: "text-orange-600" },
   { value: "note", label: "הערה", icon: MessageSquare, color: "text-gray-600" },
 ];
@@ -89,7 +89,7 @@ export function LessonsLearnedTab({ lessons, tripId, userId }: LessonsLearnedPro
       <div className="flex justify-between items-center">
         <div>
           <h2 className="font-semibold flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-yellow-500" />
+            <Lightbulb className="h-5 w-5 text-yellow-400" />
             הפקת לקחים
           </h2>
           <p className="text-xs text-muted-foreground">
@@ -192,7 +192,7 @@ export function LessonsLearnedTab({ lessons, tripId, userId }: LessonsLearnedPro
                 const ActionIcon = actionInfo?.icon || MessageSquare;
 
                 return (
-                  <div key={lesson.id} className="flex items-start gap-2 p-2 bg-gray-50 rounded-md">
+                  <div key={lesson.id} className="flex items-start gap-2 p-2 bg-secondary rounded-md">
                     <ActionIcon className={`h-4 w-4 mt-0.5 shrink-0 ${actionInfo?.color || ""}`} />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm">{lesson.content}</div>

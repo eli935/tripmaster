@@ -335,7 +335,7 @@ function OverviewTab({
               className="flex items-center justify-between py-2 border-b last:border-0"
             >
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-700">
+                <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center text-sm font-medium text-blue-400">
                   {(p.profile as any)?.full_name?.charAt(0) || "?"}
                 </div>
                 <div>
@@ -446,7 +446,7 @@ function EquipmentTab({
       {equipment.map((item) => (
         <div
           key={item.id}
-          className="flex items-center justify-between p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50"
+          className="flex items-center justify-between p-3 bg-card rounded-lg border cursor-pointer hover:bg-secondary"
           onClick={() => toggleStatus(item)}
         >
           <div className="flex items-center gap-2">
@@ -602,7 +602,7 @@ function ShoppingTab({
       {remaining.map((item) => (
         <div
           key={item.id}
-          className="flex items-center gap-3 p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50"
+          className="flex items-center gap-3 p-3 bg-card rounded-lg border cursor-pointer hover:bg-secondary"
           onClick={() => togglePurchased(item)}
         >
           <Checkbox checked={false} />
@@ -623,7 +623,7 @@ function ShoppingTab({
           {purchased.map((item) => (
             <div
               key={item.id}
-              className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border cursor-pointer opacity-60"
+              className="flex items-center gap-3 p-3 bg-secondary rounded-lg border cursor-pointer opacity-60"
               onClick={() => togglePurchased(item)}
             >
               <Checkbox checked={true} />
@@ -713,7 +713,7 @@ function ExpensesTab({
           </CardHeader>
           <CardContent className="space-y-2">
             {transfers.map((t, i) => (
-              <div key={i} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
+              <div key={i} className="flex items-center justify-between text-sm p-2 bg-secondary rounded">
                 <span>
                   <strong>{t.fromName}</strong> → <strong>{t.toName}</strong>
                 </span>
@@ -793,7 +793,7 @@ function ExpensesTab({
 
       {/* Expense List */}
       {expenses.map((exp) => (
-        <div key={exp.id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+        <div key={exp.id} className="flex items-center justify-between p-3 bg-card rounded-lg border">
           <div>
             <div className="text-sm font-medium">{exp.description}</div>
             <div className="text-xs text-muted-foreground">

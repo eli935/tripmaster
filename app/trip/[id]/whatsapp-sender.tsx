@@ -87,7 +87,7 @@ export function WhatsAppSender({
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
-          <MessageCircle className="h-4 w-4 text-green-600" />
+          <MessageCircle className="h-4 w-4 text-green-400" />
           WhatsApp
         </CardTitle>
         <CardDescription>שלח הודעות למשתתפים ({participantCount})</CardDescription>

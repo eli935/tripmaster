@@ -79,7 +79,7 @@ export default function InvitePage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
       </div>
     );
   }
@@ -93,11 +93,11 @@ export default function InvitePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-            <Plane className="h-8 w-8 text-blue-600" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-500/20">
+            <Plane className="h-8 w-8 text-blue-400" />
           </div>
           <CardTitle>{trip.name}</CardTitle>
           <CardDescription>
@@ -109,7 +109,7 @@ export default function InvitePage() {
         <CardContent>
           {alreadyJoined ? (
             <div className="text-center space-y-4">
-              <Check className="h-12 w-12 text-green-600 mx-auto" />
+              <Check className="h-12 w-12 text-green-400 mx-auto" />
               <p className="font-semibold">כבר הצטרפת לטיול הזה!</p>
               <Button onClick={() => router.push(`/trip/${tripId}`)} className="w-full">
                 מעבר לטיול

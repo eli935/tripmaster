@@ -209,7 +209,7 @@ export function TripSettings({ trip, participants, userId, isAdmin }: TripSettin
               <div key={p.id} className="border rounded-lg p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-700">
+                    <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center text-sm font-medium text-blue-400">
                       {profile?.full_name?.charAt(0) || "?"}
                     </div>
                     <div>
@@ -274,7 +274,7 @@ export function TripSettings({ trip, participants, userId, isAdmin }: TripSettin
       {!isAdmin && (
         <Card>
           <CardContent className="pt-4">
-            <Button variant="outline" className="w-full text-red-600" onClick={leaveTrip}>
+            <Button variant="outline" className="w-full text-red-400" onClick={leaveTrip}>
               עזיבת הטיול
             </Button>
           </CardContent>
@@ -285,7 +285,7 @@ export function TripSettings({ trip, participants, userId, isAdmin }: TripSettin
       {isAdmin && (
         <Card className="border-red-200">
           <CardHeader>
-            <CardTitle className="text-base text-red-600 flex items-center gap-2">
+            <CardTitle className="text-base text-red-400 flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
               אזור מסוכן
             </CardTitle>
@@ -294,7 +294,7 @@ export function TripSettings({ trip, participants, userId, isAdmin }: TripSettin
             {!deleteConfirm ? (
               <Button
                 variant="outline"
-                className="w-full text-red-600 border-red-200"
+                className="w-full text-red-400 border-red-200"
                 onClick={() => setDeleteConfirm(true)}
               >
                 <Trash2 className="ml-2 h-4 w-4" />
@@ -302,7 +302,7 @@ export function TripSettings({ trip, participants, userId, isAdmin }: TripSettin
               </Button>
             ) : (
               <div className="space-y-2">
-                <p className="text-sm text-red-600">
+                <p className="text-sm text-red-400">
                   בטוח? הפעולה תמחק את הטיול וכל הנתונים שלו לצמיתות.
                 </p>
                 <div className="flex gap-2">

@@ -38,11 +38,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-            <Plane className="h-8 w-8 text-blue-600" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl gradient-blue shadow-lg shadow-blue-500/25">
+            <Plane className="h-8 w-8 text-white" />
           </div>
           <CardTitle className="text-2xl font-bold">TripMaster</CardTitle>
           <CardDescription>מנהל טיולים משפחתיים</CardDescription>

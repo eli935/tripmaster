@@ -115,7 +115,7 @@ export function MealIngredients({ meal, items, onClose, totalPeople }: MealIngre
 
           {/* Items list */}
           {items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+            <div key={item.id} className="flex items-center justify-between p-2 bg-secondary rounded-md">
               <div className="flex items-center gap-2">
                 <span>{CATEGORY_EMOJI[item.category as FoodCategory] || "📦"}</span>
                 <div>

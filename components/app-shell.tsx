@@ -32,15 +32,15 @@ export function AppShell({ children, userName }: AppShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b border-white/20 shadow-sm">
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
           <Link href="/dashboard" className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg gradient-blue flex items-center justify-center">
               <Plane className="h-4 w-4 text-white" />
             </div>
-            <span className="font-bold text-lg bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">TripMaster</span>
+            <span className="font-bold text-lg bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">TripMaster</span>
           </Link>
 
           {/* Desktop Nav */}
@@ -79,14 +79,14 @@ export function AppShell({ children, userName }: AppShellProps) {
 
         {/* Mobile Nav */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t bg-white p-4 space-y-2">
+          <div className="md:hidden border-t bg-card p-4 space-y-2">
             <Link
               href="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
               className={cn(
                 "block px-3 py-2 rounded-md text-sm",
                 pathname === "/dashboard"
-                  ? "bg-blue-50 text-blue-700 font-medium"
+                  ? "bg-blue-50 text-blue-400 font-medium"
                   : "text-gray-700"
               )}
             >
@@ -94,7 +94,7 @@ export function AppShell({ children, userName }: AppShellProps) {
             </Link>
             <button
               onClick={handleLogout}
-              className="block w-full text-start px-3 py-2 rounded-md text-sm text-red-600"
+              className="block w-full text-start px-3 py-2 rounded-md text-sm text-red-400"
             >
               יציאה
             </button>

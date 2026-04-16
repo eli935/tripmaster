@@ -229,7 +229,7 @@ export function TripSummary({
             <Separator />
             <div className="font-medium text-sm">העברות נדרשות:</div>
             {transfers.map((t, i) => (
-              <div key={i} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
+              <div key={i} className="flex items-center justify-between text-sm bg-secondary p-2 rounded">
                 <span>{t.fromName} → {t.toName}</span>
                 <Badge variant="destructive">{formatCurrency(t.amount)}</Badge>
               </div>
@@ -243,7 +243,7 @@ export function TripSummary({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Lightbulb className="h-4 w-4 text-yellow-500" /> לקחים ({lessons.length})
+              <Lightbulb className="h-4 w-4 text-yellow-400" /> לקחים ({lessons.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
