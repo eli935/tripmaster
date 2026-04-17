@@ -24,6 +24,7 @@ stage-<N>_v<X.Y>_<YYYY-MM-DD>_<HH-MM>.md
 | 6 | ui-designer | ⏸️ ממתין | — | — | — |
 | 7 | database + destinations | ⏸️ ממתין | — | — | — |
 | 8 | recommendations-expert (חדש) | ⏸️ ממתין | — | — | — |
+| 9 (אחרון) | coordinator + user | ⏸️ ממתין | — | — | הרשמה לתוכניות affiliate (Booking/Airbnb/Rentalcars) + הכנסת IDs ל-Vercel env |
 
 ## 📝 פורמט סטנדרטי לדוח
 
