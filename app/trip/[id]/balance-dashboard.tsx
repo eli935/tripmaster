@@ -142,19 +142,16 @@ export function BalanceDashboard({
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="relative rounded-3xl overflow-hidden p-6 text-white"
-        style={{
-          background:
-            "linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ef4444 100%)",
-        }}
+        className="relative rounded-3xl overflow-hidden p-8 text-white noise-overlay"
+        style={{ background: "var(--gradient-gold-editorial)" }}
       >
-        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_top_right,_white,_transparent_60%)]" />
+        <div className="absolute inset-0 opacity-15 bg-[radial-gradient(ellipse_at_top_right,_#FAF3E2,_transparent_60%)]" />
         <div className="relative text-center">
-          <div className="flex items-center justify-center gap-1.5 text-xs text-white/80 mb-1">
+          <div className="flex items-center justify-center gap-1.5 text-[11px] uppercase tracking-[0.18em] text-white/70 mb-2 font-serif italic">
             <Sparkles className="h-3 w-3" />
             סה״כ הוצאות משותפות
           </div>
-          <div className="font-display text-5xl md:text-6xl font-bold tracking-tight tabular-nums">
+          <div className="font-display text-5xl md:text-7xl font-black tracking-tight tabular-nums text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
             {formatCurrency(countUpTotal)}
           </div>
           {totalOpen > 0.01 ? (
@@ -184,16 +181,16 @@ export function BalanceDashboard({
               transition={{ delay: i * 0.05 }}
               className={`glass rounded-2xl p-3.5 border transition-all ${
                 positive
-                  ? "border-emerald-400/30 hover:border-emerald-400/60"
+                  ? "border-[#5A6B3C]/40 hover:border-[#5A6B3C]/80"
                   : negative
-                  ? "border-rose-400/30 hover:border-rose-400/60"
+                  ? "border-[#8B2E3C]/40 hover:border-[#8B2E3C]/80"
                   : "border-white/10"
               }`}
             >
               <div className="flex items-start justify-between mb-1.5">
-                <div className="text-xs text-muted-foreground truncate">{b.name}</div>
-                {positive && <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />}
-                {negative && <TrendingDown className="h-3.5 w-3.5 text-rose-400" />}
+                <div className="text-xs text-muted-foreground truncate font-serif">{b.name}</div>
+                {positive && <TrendingUp className="h-3.5 w-3.5 text-[#C8D5A8]" />}
+                {negative && <TrendingDown className="h-3.5 w-3.5 text-[#E6B4BC]" />}
               </div>
               <div className="text-lg font-bold tabular-nums font-display">
                 {formatCurrency(b.totalPaid)}
@@ -202,9 +199,9 @@ export function BalanceDashboard({
               <div
                 className={`text-sm font-semibold mt-1.5 tabular-nums font-display ${
                   positive
-                    ? "text-emerald-400"
+                    ? "text-[#C8D5A8]"
                     : negative
-                    ? "text-rose-400"
+                    ? "text-[#E6B4BC]"
                     : "text-muted-foreground"
                 }`}
               >
@@ -251,17 +248,17 @@ export function BalanceDashboard({
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.06 }}
                   whileHover={{ scale: 1.01 }}
-                  className="glass rounded-2xl p-4 border border-white/10 hover:border-emerald-400/40 hover:shadow-[0_0_24px_-8px_rgb(16,185,129,0.5)] transition-all group"
+                  className="glass rounded-2xl p-4 border border-white/10 hover:border-[var(--gold-500)]/50 hover:shadow-[0_0_28px_-8px_rgba(212,169,96,0.45)] transition-all group"
                 >
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="px-3 py-1.5 rounded-xl bg-rose-500/20 text-rose-300 text-sm font-semibold border border-rose-400/30">
+                    <span className="px-3 py-1.5 rounded-xl bg-[#8B2E3C]/25 text-[#E6B4BC] text-sm font-serif border border-[#8B2E3C]/40">
                       {t.fromName}
                     </span>
-                    <ArrowLeft className="w-5 h-5 text-white/40 group-hover:text-emerald-400 group-hover:-translate-x-1 transition-all" />
-                    <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-sm font-semibold border border-emerald-400/30">
+                    <ArrowLeft className="w-5 h-5 text-white/40 group-hover:text-[var(--gold-500)] group-hover:-translate-x-1 transition-all" />
+                    <span className="px-3 py-1.5 rounded-xl bg-[#5A6B3C]/25 text-[#C8D5A8] text-sm font-serif border border-[#5A6B3C]/40">
                       {t.toName}
                     </span>
-                    <div className="mr-auto text-2xl font-bold tabular-nums font-display">
+                    <div className="mr-auto text-2xl font-bold tabular-nums font-display text-[var(--gold-200)]">
                       {formatCurrency(t.amount)}
                     </div>
                   </div>
@@ -271,7 +268,7 @@ export function BalanceDashboard({
                         href={bit}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 px-3 py-2 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 text-xs font-medium text-center inline-flex items-center justify-center gap-1 transition"
+                        className="flex-1 px-3 py-2 rounded-xl bg-[var(--sapphire)]/30 hover:bg-[var(--sapphire)]/50 text-[#9FB5D9] text-xs font-medium text-center inline-flex items-center justify-center gap-1 transition border border-[var(--sapphire)]/40"
                       >
                         <Smartphone className="h-3.5 w-3.5" />
                         Bit
@@ -282,7 +279,7 @@ export function BalanceDashboard({
                         href={pbx}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 px-3 py-2 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 text-xs font-medium text-center inline-flex items-center justify-center gap-1 transition"
+                        className="flex-1 px-3 py-2 rounded-xl bg-[var(--sapphire)]/30 hover:bg-[var(--sapphire)]/50 text-[#9FB5D9] text-xs font-medium text-center inline-flex items-center justify-center gap-1 transition border border-[var(--sapphire)]/40"
                       >
                         <Smartphone className="h-3.5 w-3.5" />
                         PayBox
@@ -292,7 +289,7 @@ export function BalanceDashboard({
                       <button
                         onClick={() => markSettled(t)}
                         disabled={loadingThis}
-                        className="flex-1 px-3 py-2 rounded-xl gradient-green text-white text-xs font-medium hover:brightness-110 active:scale-95 transition inline-flex items-center justify-center gap-1 disabled:opacity-50"
+                        className="flex-1 px-3 py-2 rounded-xl gradient-gold text-white text-xs font-medium hover:brightness-110 active:scale-95 transition inline-flex items-center justify-center gap-1 disabled:opacity-50"
                       >
                         <Check className="h-3.5 w-3.5" />
                         {loadingThis ? "..." : "שולם"}

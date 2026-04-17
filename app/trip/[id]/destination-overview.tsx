@@ -33,36 +33,69 @@ interface DestinationOverviewProps {
 export function DestinationOverview({ destination, rates }: DestinationOverviewProps) {
   return (
     <div className="space-y-6">
-      {/* Hero image */}
+      {/* Editorial Hero — full-bleed magazine cover */}
       <motion.div
-        initial={{ opacity: 0, scale: 1.05 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className="relative h-64 md:h-80 rounded-2xl overflow-hidden shadow-2xl shadow-blue-500/10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="relative h-[55vh] md:h-[70vh] min-h-[360px] md:min-h-[520px] rounded-3xl overflow-hidden shadow-2xl shadow-black/50"
       >
-        <img
-          src={destination.hero_image}
-          alt={destination.country}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-        <div className="absolute bottom-0 right-0 left-0 p-6 text-white">
+        <div className="absolute inset-0 overflow-hidden">
+          <img
+            src={destination.hero_image}
+            alt={destination.country}
+            className="w-full h-full object-cover animate-ken-burns"
+          />
+        </div>
+        {/* Editorial layered gradients: deep bottom for text, subtle top for masthead */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
+        {/* Noise grain */}
+        <div className="noise-overlay absolute inset-0 pointer-events-none" />
+
+        {/* Masthead */}
+        <div className="absolute top-5 right-6 left-6 flex items-center justify-between text-white">
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] font-serif italic opacity-80">
+            <span className="h-px w-6 bg-[var(--gold-500)]" />
+            יעד
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] opacity-80">
+            {destination.country}
+          </div>
+        </div>
+
+        {/* Hero title + description */}
+        <div className="absolute bottom-0 right-0 left-0 p-6 md:p-10 text-white">
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-            className="text-3xl md:text-4xl font-bold"
+            initial={{ opacity: 0, y: 12, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0)" }}
+            transition={{ delay: 0.2, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="font-serif font-black leading-[0.95] tracking-tight"
+            style={{ fontSize: "clamp(2.5rem, 8vw, 5.5rem)" }}
           >
             {destination.name}
           </motion.h2>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="text-white/90 text-sm mt-2 max-w-2xl leading-relaxed"
+            transition={{ delay: 0.35, duration: 0.5 }}
+            className="mt-3 max-w-2xl text-sm md:text-base text-white/85 leading-relaxed font-serif"
           >
             {destination.description}
           </motion.p>
+          {/* Editorial stat rules */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+            className="mt-5 flex items-stretch gap-4 text-white/90 pt-4 border-t border-[var(--gold-500)]/40"
+          >
+            <StatColumn label="מטבע" value={`${destination.currency_symbol} ${destination.currency}`} />
+            <div className="w-px bg-[var(--gold-500)]/30" />
+            <StatColumn label="שפה" value={destination.language} />
+            <div className="w-px bg-[var(--gold-500)]/30" />
+            <StatColumn label="אזור זמן" value={destination.timezone.split("(")[0].trim()} />
+          </motion.div>
         </div>
       </motion.div>
 
@@ -469,5 +502,16 @@ function Section({
       </h3>
       {children}
     </motion.section>
+  );
+}
+
+function StatColumn({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex-1 min-w-0">
+      <div className="text-[9px] uppercase tracking-[0.28em] text-[var(--gold-200)]/70 font-serif italic mb-1">
+        {label}
+      </div>
+      <div className="text-xs md:text-sm font-serif font-medium truncate">{value}</div>
+    </div>
   );
 }
