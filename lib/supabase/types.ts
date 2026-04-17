@@ -7,6 +7,9 @@ export type MealType = "breakfast" | "lunch" | "dinner" | "seuda_1" | "seuda_2" 
 export type FoodCategory = "meat" | "dairy" | "vegetables" | "dry" | "frozen" | "parve" | "other";
 export type SplitType = "equal" | "per_person" | "custom" | "private";
 export type ExpenseCategory = "flights" | "accommodation" | "car" | "food" | "equipment" | "attractions" | "other";
+export type TripType = "private" | "family" | "friends" | "client";
+export type LocationType = "domestic" | "international";
+export type MarkupType = "none" | "percent" | "fixed";
 
 export interface Profile {
   id: string;
@@ -28,6 +31,23 @@ export interface Trip {
   status: TripStatus;
   created_by: string;
   created_at: string;
+  trip_type?: TripType;
+  location_type?: LocationType;
+  admin_participates?: boolean;
+  markup_type?: MarkupType | null;
+  markup_value?: number | null;
+  accommodation_name?: string | null;
+  accommodation_address?: string | null;
+  accommodation_lat?: number | null;
+  accommodation_lng?: number | null;
+  outbound_flight_number?: string | null;
+  outbound_flight_datetime?: string | null;
+  outbound_airport?: string | null;
+  outbound_terminal?: string | null;
+  return_flight_number?: string | null;
+  return_flight_datetime?: string | null;
+  return_airport?: string | null;
+  return_terminal?: string | null;
 }
 
 export interface TripParticipant {

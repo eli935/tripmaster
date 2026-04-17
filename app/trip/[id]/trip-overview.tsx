@@ -218,7 +218,7 @@ export function TripOverview({
           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         >
           {activeTab === "destination" && destination && (
-            <DestinationOverview destination={destination} rates={rates} />
+            <DestinationOverview destination={destination} rates={rates} trip={trip} days={days} />
           )}
           {activeTab === "chat" && (
             <TripChat

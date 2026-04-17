@@ -24,12 +24,15 @@ import {
   Users,
   MapPin,
   ArrowLeft,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { Profile, Trip, HolidayType, TripStatus } from "@/lib/supabase/types";
+import type { Profile, Trip, HolidayType, TripStatus, TripType, LocationType, MarkupType } from "@/lib/supabase/types";
 import { generateTripDays } from "@/lib/hebrew-calendar";
 import { FadeUp, StaggerContainer, StaggerItem, HoverScale } from "@/components/motion";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { User, Users as UsersIcon, UserPlus, Briefcase, Home, Plane as PlaneIcon } from "lucide-react";
 
 const STATUS_LABELS: Record<TripStatus, { label: string; color: string }> = {
   planning: { label: "בתכנון", color: "bg-yellow-100 text-yellow-800" },
@@ -46,11 +49,22 @@ const HOLIDAY_LABELS: Record<HolidayType, string> = {
   regular: "טיול רגיל",
 };
 
+interface PendingInvite {
+  id: string;
+  token: string;
+  trip_id: string;
+  message: string | null;
+  expires_at: string;
+  trip: { name: string; destination: string; start_date: string; end_date: string } | null;
+  inviter: { full_name: string | null } | null;
+}
+
 interface DashboardContentProps {
   profile: Profile | null;
   trips: (Trip & { role: string })[];
   userId: string;
   canCreateTrip?: boolean;
+  pendingInvites?: PendingInvite[];
 }
 
 export function DashboardContent({
@@ -58,7 +72,28 @@ export function DashboardContent({
   trips,
   userId,
   canCreateTrip = true,
+  pendingInvites = [],
 }: DashboardContentProps) {
+  const [acceptingToken, setAcceptingToken] = useState<string | null>(null);
+
+  async function acceptInvite(token: string) {
+    setAcceptingToken(token);
+    const { data, error } = await supabase.rpc("accept_trip_invitation", { p_token: token });
+    if (error || !data?.ok) {
+      toast.error("שגיאה באישור ההזמנה", { description: error?.message || data?.error });
+      setAcceptingToken(null);
+      return;
+    }
+    toast.success("הצטרפת לטיול! 🎉");
+    const needsOnboarding = !profile || profile.children === null;
+    if (needsOnboarding) {
+      router.push(`/onboarding?next=/trip/${data.trip_id}`);
+    } else {
+      router.push(`/trip/${data.trip_id}`);
+      router.refresh();
+    }
+  }
+
   const router = useRouter();
   const supabase = createClient();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -70,6 +105,11 @@ export function DashboardContent({
   const [holidayType, setHolidayType] = useState<HolidayType>("regular");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [tripType, setTripType] = useState<TripType>("family");
+  const [locationType, setLocationType] = useState<LocationType>("international");
+  const [adminParticipates, setAdminParticipates] = useState(true);
+  const [markupType, setMarkupType] = useState<MarkupType>("none");
+  const [markupValue, setMarkupValue] = useState<string>("");
 
   async function handleCreateTrip(e: React.FormEvent) {
     e.preventDefault();
@@ -85,6 +125,13 @@ export function DashboardContent({
         start_date: startDate,
         end_date: endDate,
         created_by: userId,
+        trip_type: tripType,
+        location_type: locationType,
+        admin_participates: adminParticipates,
+        markup_type: (tripType === "friends" || tripType === "client") ? markupType : "none",
+        markup_value: (tripType === "friends" || tripType === "client") && markupType !== "none"
+          ? (parseFloat(markupValue) || 0)
+          : 0,
       })
       .select()
       .single();
@@ -147,7 +194,8 @@ export function DashboardContent({
     toast.success("הטיול נוצר בהצלחה!");
     setDialogOpen(false);
     setLoading(false);
-    router.push(`/trip/${trip.id}`);
+    const suffix = tripType === "family" ? "?setup=family" : "";
+    router.push(`/trip/${trip.id}${suffix}`);
     router.refresh();
   }
 
@@ -168,7 +216,7 @@ export function DashboardContent({
           <DialogTrigger
             render={<Button><Plus className="ml-2 h-4 w-4" />טיול חדש</Button>}
           />
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>יצירת טיול חדש</DialogTitle>
               <DialogDescription>מלא את הפרטים כדי להתחיל לתכנן</DialogDescription>
@@ -192,6 +240,163 @@ export function DashboardContent({
                   required
                 />
               </div>
+              {/* Trip type — 2x2 grid of cards */}
+              <div className="space-y-2">
+                <Label>סוג טיול</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { value: "private", icon: User, title: "פרטי", desc: "טיול אישי, בלי חלוקה" },
+                    { value: "family", icon: UsersIcon, title: "משפחתי", desc: "עם בני המשפחה, חלוקת משימות" },
+                    { value: "friends", icon: UserPlus, title: "חברים", desc: "קבוצת חברים, עם רווח מנהל" },
+                    { value: "client", icon: Briefcase, title: "לקוח", desc: "טיול עבור לקוח, עם עמלה" },
+                  ] as { value: TripType; icon: any; title: string; desc: string }[]).map((opt) => {
+                    const Icon = opt.icon;
+                    const active = tripType === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setTripType(opt.value)}
+                        className={`relative text-right rounded-xl border p-3 transition-all ${
+                          active
+                            ? "border-[var(--gold-500)] bg-[var(--gold-500)]/10 shadow-[0_0_0_1px_var(--gold-500)]"
+                            : "border-border/50 glass hover:border-[var(--gold-500)]/40"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Icon className={`h-4 w-4 ${active ? "text-[var(--gold-500)]" : "text-muted-foreground"}`} />
+                          <span className="font-semibold text-sm">{opt.title}</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground leading-tight">{opt.desc}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Location type chips */}
+              <div className="space-y-2">
+                <Label>יעד</Label>
+                <div className="flex gap-2">
+                  {([
+                    { value: "domestic", icon: Home, label: "🇮🇱 בישראל" },
+                    { value: "international", icon: PlaneIcon, label: "✈️ בחו\"ל" },
+                  ] as { value: LocationType; icon: any; label: string }[]).map((opt) => {
+                    const active = locationType === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setLocationType(opt.value)}
+                        className={`flex-1 rounded-full px-4 py-2 text-sm transition-all border ${
+                          active
+                            ? "border-[var(--gold-500)] bg-[var(--gold-500)]/15 text-white font-semibold"
+                            : "border-border/50 glass text-muted-foreground hover:text-white"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Admin participates — custom switch */}
+              <div className="flex items-center justify-between rounded-xl border border-border/50 glass p-3">
+                <div className="space-y-0.5">
+                  <Label className="text-sm cursor-pointer" htmlFor="admin-participates-switch">
+                    אני משתתף בטיול
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    כבה אם אתה מנהל טיול בלבד עבור אחרים
+                  </p>
+                </div>
+                <button
+                  id="admin-participates-switch"
+                  type="button"
+                  role="switch"
+                  aria-checked={adminParticipates}
+                  onClick={() => setAdminParticipates((v) => !v)}
+                  title="כבה אם אתה מנהל טיול בלבד עבור אחרים"
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                    adminParticipates ? "bg-[var(--gold-500)]" : "bg-muted"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                      adminParticipates ? "translate-x-[-22px]" : "translate-x-[-2px]"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Conditional markup (friends / client) */}
+              <AnimatePresence initial={false}>
+                {(tripType === "friends" || tripType === "client") && (
+                  <motion.div
+                    key="markup-fields"
+                    initial={{ opacity: 0, height: 0, y: -6 }}
+                    animate={{ opacity: 1, height: "auto", y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -6 }}
+                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                    className="overflow-hidden"
+                  >
+                    <div className="rounded-xl border border-[var(--gold-500)]/30 bg-[var(--gold-500)]/5 p-3 space-y-3">
+                      <div className="text-[10px] uppercase tracking-[0.2em] font-serif italic text-[var(--gold-200)]">
+                        תמחור ורווח
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label>סוג רווח</Label>
+                          <Select
+                            value={markupType}
+                            onValueChange={(v) => setMarkupType(v as MarkupType)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue>
+                                {(v: unknown) => {
+                                  const map: Record<MarkupType, string> = {
+                                    none: "ללא",
+                                    percent: "אחוזים",
+                                    fixed: "סכום קבוע",
+                                  };
+                                  return map[(v as MarkupType) ?? "none"] ?? "ללא";
+                                }}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">ללא</SelectItem>
+                              <SelectItem value="percent">אחוזים (%)</SelectItem>
+                              <SelectItem value="fixed">סכום קבוע (₪)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>ערך</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={markupType === "percent" ? 100 : undefined}
+                            step="0.01"
+                            disabled={markupType === "none"}
+                            placeholder={
+                              markupType === "percent"
+                                ? "למשל 10 (=10%)"
+                                : markupType === "fixed"
+                                ? "למשל 500 ₪"
+                                : "בחר סוג רווח"
+                            }
+                            value={markupValue}
+                            onChange={(e) => setMarkupValue(e.target.value)}
+                            dir="ltr"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <div className="space-y-2">
                 <Label>סוג חג</Label>
                 <Select
@@ -242,6 +447,69 @@ export function DashboardContent({
         </Dialog>
         )}
       </div>
+
+      {/* Pending invitations */}
+      {pendingInvites.length > 0 && (
+        <div className="space-y-3">
+          {pendingInvites.map((inv) => (
+            <motion.div
+              key={inv.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="relative overflow-hidden rounded-2xl border border-[var(--gold-500)]/40 bg-gradient-to-l from-[var(--gold-500)]/10 via-background to-background p-5 shadow-lg"
+            >
+              <div className="flex flex-col md:flex-row md:items-center gap-4 justify-between">
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.28em] font-serif italic text-[var(--gold-200)]">
+                    <Sparkles className="h-3 w-3" />
+                    הזמנה חדשה לטיול
+                  </div>
+                  <h3 className="font-serif text-xl md:text-2xl font-bold leading-tight">
+                    {inv.trip?.name || "טיול"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
+                    {inv.trip?.destination && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {inv.trip.destination}
+                      </span>
+                    )}
+                    {inv.trip?.start_date && inv.trip?.end_date && (
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(inv.trip.start_date).toLocaleDateString("he-IL")} — {new Date(inv.trip.end_date).toLocaleDateString("he-IL")}
+                      </span>
+                    )}
+                    {inv.inviter?.full_name && (
+                      <span className="opacity-80">מאת {inv.inviter.full_name}</span>
+                    )}
+                  </p>
+                  {inv.message && (
+                    <blockquote className="mt-2 text-xs italic px-3 py-2 border-r-2 border-[var(--gold-500)] bg-[var(--gold-500)]/5 rounded">
+                      {inv.message}
+                    </blockquote>
+                  )}
+                </div>
+                <Button
+                  onClick={() => acceptInvite(inv.token)}
+                  disabled={acceptingToken === inv.token}
+                  className="rounded-full gradient-gold text-white border-0 h-11 px-6 shrink-0 shadow-[0_4px_20px_-6px_rgba(212,169,96,0.6)]"
+                >
+                  {acceptingToken === inv.token ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Sparkles className="ml-1.5 h-4 w-4" />
+                      אשר הצטרפות
+                    </>
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       {/* Active Trips */}
       {activeTrips.length === 0 && pastTrips.length === 0 ? (

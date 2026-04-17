@@ -37,12 +37,21 @@ export default async function DashboardPage() {
     role: p.role,
   })) || [];
 
+  // Pending invitations addressed to this user's email (RLS filters to invitee's email).
+  const { data: pendingInvites } = await supabase
+    .from("trip_invitations")
+    .select("id, token, trip_id, message, expires_at, trip:trips(name, destination, start_date, end_date), inviter:profiles!invited_by(full_name)")
+    .eq("status", "pending")
+    .eq("email", (user.email || "").toLowerCase())
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false });
+
   // Non-admin with exactly one trip → take them directly there.
   const canCreateTrip =
     !!profile?.is_super_admin ||
     trips.some((t: any) => t.role === "admin");
 
-  if (!canCreateTrip && trips.length === 1) {
+  if (!canCreateTrip && trips.length === 1 && (pendingInvites?.length || 0) === 0) {
     redirect(`/trip/${trips[0].id}`);
   }
 
@@ -53,6 +62,7 @@ export default async function DashboardPage() {
         trips={trips}
         userId={user.id}
         canCreateTrip={canCreateTrip}
+        pendingInvites={(pendingInvites as any) || []}
       />
     </AppShell>
   );

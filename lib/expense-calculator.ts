@@ -158,6 +158,28 @@ export function minimizeTransfers(balances: Balance[]): Transfer[] {
 }
 
 /**
+ * Apply a markup (percent or fixed) to a base amount.
+ * Used for v9.0 "friends" and "client" trip types where admin adds a margin.
+ */
+export function applyMarkup(
+  baseAmount: number,
+  markupType: "none" | "percent" | "fixed",
+  markupValue: number
+): { finalAmount: number; markup: number } {
+  const base = Number(baseAmount) || 0;
+  const value = Number(markupValue) || 0;
+
+  if (markupType === "percent") {
+    const markup = base * (value / 100);
+    return { finalAmount: base + markup, markup };
+  }
+  if (markupType === "fixed") {
+    return { finalAmount: base + value, markup: value };
+  }
+  return { finalAmount: base, markup: 0 };
+}
+
+/**
  * Format currency amount in ILS
  */
 export function formatCurrency(amount: number, currency = "ILS"): string {
