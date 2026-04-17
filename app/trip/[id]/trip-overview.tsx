@@ -229,7 +229,7 @@ export function TripOverview({
             />
           )}
           {activeTab === "admin" && isAdmin && (
-            <AdminPanel tripId={trip.id} userId={userId} />
+            <AdminPanel tripId={trip.id} userId={userId} tripName={trip.name} />
           )}
           {activeTab === "overview" && (
             <OverviewTab

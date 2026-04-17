@@ -50,9 +50,15 @@ interface DashboardContentProps {
   profile: Profile | null;
   trips: (Trip & { role: string })[];
   userId: string;
+  canCreateTrip?: boolean;
 }
 
-export function DashboardContent({ profile, trips, userId }: DashboardContentProps) {
+export function DashboardContent({
+  profile,
+  trips,
+  userId,
+  canCreateTrip = true,
+}: DashboardContentProps) {
   const router = useRouter();
   const supabase = createClient();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -157,6 +163,7 @@ export function DashboardContent({ profile, trips, userId }: DashboardContentPro
           <h1 className="font-serif text-4xl md:text-5xl font-bold tracking-tight leading-[1.05]">{profile?.full_name}</h1>
         </FadeUp>
 
+        {canCreateTrip && (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger
             render={<Button><Plus className="ml-2 h-4 w-4" />טיול חדש</Button>}
@@ -233,6 +240,7 @@ export function DashboardContent({ profile, trips, userId }: DashboardContentPro
             </form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       {/* Active Trips */}
@@ -240,14 +248,25 @@ export function DashboardContent({ profile, trips, userId }: DashboardContentPro
         <Card className="text-center py-12">
           <CardContent>
             <Plane className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">עדיין אין טיולים</h3>
-            <p className="text-muted-foreground mb-4">
-              צור את הטיול הראשון שלך ותתחיל לתכנן!
-            </p>
-            <Button onClick={() => setDialogOpen(true)}>
-              <Plus className="ml-2 h-4 w-4" />
-              טיול חדש
-            </Button>
+            {canCreateTrip ? (
+              <>
+                <h3 className="text-lg font-semibold mb-2 font-serif">עדיין אין טיולים</h3>
+                <p className="text-muted-foreground mb-4">
+                  צור את הטיול הראשון שלך ותתחיל לתכנן!
+                </p>
+                <Button onClick={() => setDialogOpen(true)}>
+                  <Plus className="ml-2 h-4 w-4" />
+                  טיול חדש
+                </Button>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold mb-2 font-serif">עדיין לא הוזמנת לטיול</h3>
+                <p className="text-muted-foreground text-sm">
+                  ברגע שמנהל טיול יזמין אותך באימייל, הטיול יופיע כאן.
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       ) : (

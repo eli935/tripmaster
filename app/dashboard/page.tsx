@@ -15,6 +15,14 @@ export default async function DashboardPage() {
     .eq("id", user.id)
     .single();
 
+  // First-time login: redirect to /onboarding if family composition missing.
+  // Allow super_admin (Eli) to bypass so he can still reach the dashboard to create trips.
+  const needsOnboarding =
+    !profile || profile.full_name === null || profile.children === null;
+  if (needsOnboarding && !profile?.is_super_admin) {
+    redirect("/onboarding?next=/dashboard");
+  }
+
   const { data: participations } = await supabase
     .from("trip_participants")
     .select(`
@@ -29,12 +37,22 @@ export default async function DashboardPage() {
     role: p.role,
   })) || [];
 
+  // Non-admin with exactly one trip → take them directly there.
+  const canCreateTrip =
+    !!profile?.is_super_admin ||
+    trips.some((t: any) => t.role === "admin");
+
+  if (!canCreateTrip && trips.length === 1) {
+    redirect(`/trip/${trips[0].id}`);
+  }
+
   return (
     <AppShell userName={profile?.full_name}>
       <DashboardContent
         profile={profile}
         trips={trips}
         userId={user.id}
+        canCreateTrip={canCreateTrip}
       />
     </AppShell>
   );

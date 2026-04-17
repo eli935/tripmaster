@@ -22,10 +22,12 @@ import {
 import { toast } from "sonner";
 import { approveSoftDelete, rejectSoftDelete } from "@/lib/soft-delete";
 import type { AuditLog, AppVersion } from "@/lib/types-v8";
+import { InviteManager } from "./invite-manager";
 
 interface AdminPanelProps {
   tripId: string;
   userId: string;
+  tripName: string;
 }
 
 const ACTION_LABELS: Record<string, { label: string; color: string; icon: any }> = {
@@ -46,7 +48,7 @@ const TABLE_LABELS: Record<string, string> = {
   trips: "טיול",
 };
 
-export function AdminPanel({ tripId, userId }: AdminPanelProps) {
+export function AdminPanel({ tripId, userId, tripName }: AdminPanelProps) {
   const router = useRouter();
   const supabase = createClient();
   const [pendingDeletes, setPendingDeletes] = useState<any[]>([]);
@@ -133,6 +135,22 @@ export function AdminPanel({ tripId, userId }: AdminPanelProps) {
 
   return (
     <div className="space-y-4">
+      {/* Section: Invitations */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2 font-serif">
+            <Shield className="h-4 w-4 text-[var(--gold-500)]" />
+            הזמנות משתתפים
+          </CardTitle>
+          <CardDescription className="text-xs">
+            הזמן אחרים באימייל להצטרף לטיול. הם יקבלו מייל עם קישור, וייכנסו כמשתתפים לאחר אישור.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <InviteManager tripId={tripId} tripName={tripName} />
+        </CardContent>
+      </Card>
+
       {/* Section: Pending Deletions */}
       <Card>
         <CardHeader
