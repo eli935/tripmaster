@@ -29,6 +29,8 @@ import {
   Car,
   CalendarPlus,
   Home,
+  Search,
+  Fish,
 } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -37,6 +39,23 @@ import type { Trip, TripDay } from "@/lib/supabase/types";
 import { fetchWeather, geocode, type WeatherDay } from "@/lib/weather";
 
 type AttractionFilter = "all" | "hiking" | "paid" | "free" | "kid_friendly";
+
+interface LocalCustomsHoliday {
+  name: string;
+  dates: string;
+  description: string;
+  affects_trip: boolean;
+}
+
+interface LocalCustoms {
+  overview: string;
+  special_holidays: LocalCustomsHoliday[];
+  etiquette: string[];
+  tipping: string;
+  dress_code: string;
+  languages: string[];
+  what_closes_on_holidays: string;
+}
 
 const FILTER_LABELS: Record<AttractionFilter, string> = {
   all: "הכל",
@@ -62,6 +81,8 @@ export function DestinationOverview({
   const [filter, setFilter] = useState<AttractionFilter>("all");
   const [weather, setWeather] = useState<WeatherDay[]>([]);
   const [weatherLoading, setWeatherLoading] = useState(false);
+  const [customs, setCustoms] = useState<LocalCustoms | null>(null);
+  const [customsLoading, setCustomsLoading] = useState(false);
   // Coordinates resolved via geocoding fallback when DESTINATIONS_DB has none.
   const [geoCoords, setGeoCoords] = useState<{ lat: number; lng: number } | null>(null);
   // Geocoded coordinates for each Chabad house, keyed by address.
@@ -170,6 +191,51 @@ export function DestinationOverview({
     })();
   }, [weather, trip?.country_code]);
 
+  // Fetch local customs (international trips only). Uses /api/destinations/customs.
+  useEffect(() => {
+    if (isDomestic) {
+      setCustoms(null);
+      return;
+    }
+    if (!trip?.start_date || !trip?.end_date) return;
+    const dest = trip?.destination || destination.country || destination.name;
+    if (!dest) return;
+    let cancelled = false;
+    setCustomsLoading(true);
+    fetch("/api/destinations/customs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        destination: dest,
+        startDate: trip.start_date,
+        endDate: trip.end_date,
+        countryCode: trip.country_code || destination.country_code,
+      }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && data?.customs) setCustoms(data.customs as LocalCustoms);
+      })
+      .catch(() => {
+        /* non-fatal */
+      })
+      .finally(() => {
+        if (!cancelled) setCustomsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isDomestic,
+    trip?.destination,
+    trip?.start_date,
+    trip?.end_date,
+    trip?.country_code,
+    destination.country,
+    destination.country_code,
+    destination.name,
+  ]);
+
   // Geocode Chabad addresses when we have accommodation coordinates.
   // Runs once per unique address. Failures are silent (no badge is shown).
   useEffect(() => {
@@ -276,6 +342,11 @@ export function DestinationOverview({
         loading={weatherLoading}
         hasCoordinates={!!effectiveCoords}
       />
+
+      {/* Local Customs (international only) */}
+      {!isDomestic && (
+        <CustomsCard customs={customs} loading={customsLoading} />
+      )}
 
       {/* Quick Info */}
       <motion.div
@@ -428,6 +499,21 @@ export function DestinationOverview({
           </div>
         </Section>
       )}
+
+      {/* Jewish services search (international only) */}
+      {!isDomestic && (
+        <Section title="חיפוש שירותים יהודיים" icon="🔍" delay={0.12}>
+          <JewishServicesGrid destinationQuery={destinationQuery} />
+        </Section>
+      )}
+
+      {/* Fresh fish markets (both domestic & international) */}
+      <Section title="דגים טריים" icon="🐟" delay={0.14}>
+        <FishMarketsCard
+          destinationQuery={destinationQuery}
+          kosherHint={!isDomestic}
+        />
+      </Section>
 
       {/* Kosher Restaurants */}
       {destination.restaurants.length > 0 && (
@@ -1023,6 +1109,187 @@ function WalkingBadge({
     <Badge variant="secondary" className="text-xs bg-blue-500/15 text-blue-400 border-0 w-fit">
       🚗 {km.toFixed(1)} ק״מ
     </Badge>
+  );
+}
+
+function CustomsCard({
+  customs,
+  loading,
+}: {
+  customs: LocalCustoms | null;
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="rounded-2xl glass p-4 animate-pulse">
+        <div className="h-4 w-40 bg-white/10 rounded mb-3" />
+        <div className="h-3 w-full bg-white/5 rounded mb-2" />
+        <div className="h-3 w-2/3 bg-white/5 rounded" />
+      </div>
+    );
+  }
+  if (!customs || !customs.overview) return null;
+  const hasHolidays = customs.special_holidays && customs.special_holidays.length > 0;
+  const hasEtiquette = customs.etiquette && customs.etiquette.length > 0;
+  const quickFacts = [
+    customs.tipping && { label: "תשר", value: customs.tipping },
+    customs.dress_code && { label: "לבוש", value: customs.dress_code },
+    customs.languages?.length && { label: "שפות", value: customs.languages.join(" · ") },
+  ].filter(Boolean) as { label: string; value: string }[];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.16 }}
+      className="rounded-2xl glass p-5"
+    >
+      <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+        <span className="text-lg">🌍</span> מנהגי המקום
+      </h3>
+      <p className="text-sm text-muted-foreground leading-relaxed">{customs.overview}</p>
+
+      {hasHolidays && (
+        <div className="mt-4 space-y-2">
+          <div className="text-xs font-semibold text-[var(--gold-200)]">
+            אירועים וחגים בתקופת הטיול
+          </div>
+          <div className="grid gap-2 md:grid-cols-2">
+            {customs.special_holidays.map((h, i) => (
+              <div
+                key={i}
+                className={`rounded-xl p-3 border ${
+                  h.affects_trip
+                    ? "bg-[var(--gold-500)]/10 border-[var(--gold-500)]/50"
+                    : "bg-white/5 border-white/10"
+                }`}
+              >
+                <div className="text-sm font-semibold flex items-center gap-1">
+                  {h.affects_trip && <span>⚠️</span>}
+                  {h.name}
+                </div>
+                <div className="text-[11px] text-muted-foreground">{h.dates}</div>
+                <div className="text-xs mt-1">{h.description}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {hasEtiquette && (
+        <div className="mt-4">
+          <div className="text-xs font-semibold mb-2">טיפים תרבותיים</div>
+          <ul className="space-y-1">
+            {customs.etiquette.map((t, i) => (
+              <li key={i} className="text-xs flex items-start gap-2">
+                <span className="text-[var(--gold-200)] mt-0.5">✦</span>
+                <span>{t}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {customs.what_closes_on_holidays && (
+        <div className="mt-3 text-xs text-amber-300/90 bg-amber-500/10 rounded-xl p-2.5 border border-amber-500/20">
+          🛑 {customs.what_closes_on_holidays}
+        </div>
+      )}
+
+      {quickFacts.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2 pt-3 border-t border-white/10">
+          {quickFacts.map((f, i) => (
+            <div
+              key={i}
+              className="text-[11px] px-2.5 py-1 rounded-full bg-white/5 border border-white/10"
+            >
+              <span className="text-muted-foreground">{f.label}: </span>
+              <span className="font-medium">{f.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+function FishMarketsCard({
+  destinationQuery,
+  kosherHint,
+}: {
+  destinationQuery: string;
+  kosherHint: boolean;
+}) {
+  const gmapsQuery = kosherHint
+    ? `fresh+fish+market+${destinationQuery}+kosher`
+    : `fresh+fish+market+${destinationQuery}`;
+  const gmapsHref = `https://www.google.com/maps/search/${gmapsQuery}`;
+  const wazeHref = `https://waze.com/ul?q=fresh+fish+market+${destinationQuery}&navigate=yes`;
+  return (
+    <div className="rounded-2xl glass p-4 space-y-3">
+      <div className="flex items-start gap-3">
+        <div className="shrink-0 p-2 rounded-xl bg-cyan-500/20">
+          <Fish className="h-5 w-5 text-cyan-400" />
+        </div>
+        <div>
+          <div className="font-semibold text-sm">חנויות דגים טריים קרובים</div>
+          <div className="text-xs text-muted-foreground">
+            חפש סימן &quot;fresh&quot; או &quot;טרי&quot; וימי אספקה
+          </div>
+        </div>
+      </div>
+      <div className="grid gap-2 md:grid-cols-2">
+        <a
+          href={gmapsHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 p-3 text-xs flex items-center gap-2 transition-colors"
+        >
+          <Search className="h-3.5 w-3.5 text-cyan-400" />
+          <span className="font-medium">חיפוש Google Maps</span>
+          <ExternalLink className="h-3 w-3 text-muted-foreground mr-auto" />
+        </a>
+        <a
+          href={wazeHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 p-3 text-xs flex items-center gap-2 transition-colors"
+        >
+          <Navigation className="h-3.5 w-3.5 text-purple-400" />
+          <span className="font-medium">חיפוש Waze</span>
+          <ExternalLink className="h-3 w-3 text-muted-foreground mr-auto" />
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function JewishServicesGrid({ destinationQuery }: { destinationQuery: string }) {
+  const items: { icon: string; label: string; query: string }[] = [
+    { icon: "🕍", label: "בתי כנסת", query: `synagogue+${destinationQuery}` },
+    { icon: "🛁", label: "מקוואות", query: `mikvah+${destinationQuery}` },
+    { icon: "🥩", label: "קצביות כשרות", query: `kosher+butcher+${destinationQuery}` },
+    { icon: "🍞", label: "מאפיות כשרות", query: `kosher+bakery+${destinationQuery}` },
+  ];
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {items.map((it, i) => (
+        <a
+          key={i}
+          href={`https://www.google.com/maps/search/${it.query}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-2xl glass glass-hover p-4 flex items-center gap-3 transition-all hover:scale-[1.01]"
+        >
+          <div className="text-2xl shrink-0">{it.icon}</div>
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-sm">{it.label}</div>
+            <div className="text-[11px] text-muted-foreground">חיפוש Google Maps</div>
+          </div>
+          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        </a>
+      ))}
+    </div>
   );
 }
 
