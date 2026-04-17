@@ -72,3 +72,56 @@ export async function fetchWeather(
     return [];
   }
 }
+
+// ───────────────────────────────────────────────────────────────────
+// Geocoding — Open-Meteo Geocoding API (free, no key)
+// Docs: https://open-meteo.com/en/docs/geocoding-api
+// ───────────────────────────────────────────────────────────────────
+
+export type GeocodeResult = {
+  lat: number;
+  lng: number;
+  country: string;       // full country name (e.g. "Italy")
+  country_code: string;  // ISO-2 (e.g. "IT"), uppercased
+  timezone?: string;     // IANA tz, e.g. "Europe/Rome"
+  name?: string;         // canonical place name from the API
+};
+
+/**
+ * Resolve a destination string (any language) to coordinates + country.
+ * Returns null on failure — caller should fall back gracefully.
+ *
+ * Caches per-process via Next fetch revalidate (24h) to avoid repeat calls
+ * for the same destination within a server instance. Persistent caching
+ * into destinations_cache is the caller's responsibility.
+ */
+export async function geocode(
+  destinationName: string
+): Promise<GeocodeResult | null> {
+  const q = destinationName?.trim();
+  if (!q) return null;
+  try {
+    const url =
+      `https://geocoding-api.open-meteo.com/v1/search` +
+      `?name=${encodeURIComponent(q)}&count=1&language=he&format=json`;
+    const res = await fetch(url, {
+      next: { revalidate: 60 * 60 * 24 }, // 24h — geocodes are effectively static
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const hit = Array.isArray(data?.results) ? data.results[0] : null;
+    if (!hit || typeof hit.latitude !== "number" || typeof hit.longitude !== "number") {
+      return null;
+    }
+    return {
+      lat: Number(hit.latitude),
+      lng: Number(hit.longitude),
+      country: String(hit.country ?? ""),
+      country_code: String(hit.country_code ?? "").toUpperCase(),
+      timezone: hit.timezone ? String(hit.timezone) : undefined,
+      name: hit.name ? String(hit.name) : undefined,
+    };
+  } catch {
+    return null;
+  }
+}

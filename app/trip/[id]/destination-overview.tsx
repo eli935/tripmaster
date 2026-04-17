@@ -34,7 +34,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { DestinationInfo, Attraction } from "@/lib/destinations";
 import type { Trip, TripDay } from "@/lib/supabase/types";
-import { fetchWeather, type WeatherDay } from "@/lib/weather";
+import { fetchWeather, geocode, type WeatherDay } from "@/lib/weather";
 
 type AttractionFilter = "all" | "hiking" | "paid" | "free" | "kid_friendly";
 
@@ -62,21 +62,62 @@ export function DestinationOverview({
   const [filter, setFilter] = useState<AttractionFilter>("all");
   const [weather, setWeather] = useState<WeatherDay[]>([]);
   const [weatherLoading, setWeatherLoading] = useState(false);
+  // Coordinates resolved via geocoding fallback when DESTINATIONS_DB has none.
+  const [geoCoords, setGeoCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const isDomestic = trip?.location_type === "domestic";
   const destinationQuery = encodeURIComponent(trip?.destination || destination.country);
 
-  // Load weather (client-side). If trip dates + coordinates present, fetch from Open-Meteo.
+  // Affiliate-aware URLs. Env vars fall back to empty strings; clean URLs when unset.
+  const bookingAid = process.env.NEXT_PUBLIC_BOOKING_AFFILIATE_ID || "";
+  const airbnbAf = process.env.NEXT_PUBLIC_AIRBNB_AFFILIATE_ID || "";
+  const rentalcarsAff = process.env.NEXT_PUBLIC_RENTALCARS_AFFILIATE_ID || "";
+
+  const bookingHref =
+    `https://www.booking.com/searchresults.html?ss=${destinationQuery}` +
+    (bookingAid ? `&aid=${encodeURIComponent(bookingAid)}` : "");
+  const airbnbHref = airbnbAf
+    ? `https://www.airbnb.com/s/${destinationQuery}?enable_i18n=true&af=${encodeURIComponent(airbnbAf)}`
+    : `https://www.airbnb.com/s/${destinationQuery}`;
+  const rentalcarsHref =
+    `https://www.rentalcars.com/SearchResults.do?location=${destinationQuery}` +
+    (rentalcarsAff ? `&affiliateCode=${encodeURIComponent(rentalcarsAff)}` : "");
+  const kayakHref = `https://www.kayak.com/cars/${destinationQuery}`;
+
+  // Effective coordinates: prefer static DB, otherwise the geocoded fallback.
+  const effectiveCoords = destination.coordinates
+    ? { lat: destination.coordinates.lat, lng: destination.coordinates.lng }
+    : geoCoords;
+
+  // Geocoding fallback — if no static coordinates, resolve via Open-Meteo.
   useEffect(() => {
     let cancelled = false;
-    if (!destination.coordinates || !trip?.start_date || !trip?.end_date) {
+    if (destination.coordinates) {
+      setGeoCoords(null);
+      return;
+    }
+    const q = trip?.destination || destination.country || destination.name;
+    if (!q) return;
+    geocode(q).then((g) => {
+      if (cancelled || !g) return;
+      setGeoCoords({ lat: g.lat, lng: g.lng });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [destination.coordinates, destination.country, destination.name, trip?.destination]);
+
+  // Load weather (client-side). Needs trip dates + effective coordinates.
+  useEffect(() => {
+    let cancelled = false;
+    if (!effectiveCoords || !trip?.start_date || !trip?.end_date) {
       setWeather([]);
       return;
     }
     setWeatherLoading(true);
     fetchWeather(
-      destination.coordinates.lat,
-      destination.coordinates.lng,
+      effectiveCoords.lat,
+      effectiveCoords.lng,
       trip.start_date,
       trip.end_date
     )
@@ -89,7 +130,7 @@ export function DestinationOverview({
     return () => {
       cancelled = true;
     };
-  }, [destination.coordinates, trip?.start_date, trip?.end_date]);
+  }, [effectiveCoords?.lat, effectiveCoords?.lng, trip?.start_date, trip?.end_date]);
 
   // Fire-and-forget: cache into destinations_cache if stale (>3h).
   useEffect(() => {
@@ -196,7 +237,7 @@ export function DestinationOverview({
       <WeatherStrip
         weather={weather}
         loading={weatherLoading}
-        hasCoordinates={!!destination.coordinates}
+        hasCoordinates={!!effectiveCoords}
       />
 
       {/* Quick Info */}
@@ -483,7 +524,7 @@ export function DestinationOverview({
             icon={<Building2 className="h-5 w-5 text-blue-400" />}
             title="Booking.com"
             subtitle="מלונות ודירות נופש"
-            href={`https://www.booking.com/searchresults.html?ss=${destinationQuery}`}
+            href={bookingHref}
             gradient="from-blue-500/20 to-blue-500/5"
           />
           {!isDomestic && (
@@ -491,7 +532,7 @@ export function DestinationOverview({
               icon={<Home className="h-5 w-5 text-pink-400" />}
               title="Airbnb"
               subtitle="דירות מקומיות"
-              href={`https://www.airbnb.com/s/${destinationQuery}`}
+              href={airbnbHref}
               gradient="from-pink-500/20 to-pink-500/5"
             />
           )}
@@ -514,14 +555,14 @@ export function DestinationOverview({
             icon={<Car className="h-5 w-5 text-emerald-400" />}
             title="Rentalcars"
             subtitle="השוואת מחירים"
-            href={`https://www.rentalcars.com/SearchResults.do?location=${destinationQuery}`}
+            href={rentalcarsHref}
             gradient="from-emerald-500/20 to-emerald-500/5"
           />
           <AffiliateCard
             icon={<Car className="h-5 w-5 text-orange-400" />}
             title="Kayak"
             subtitle="השוואת מחירים + מטא-חיפוש"
-            href={`https://www.kayak.com/cars/${destinationQuery}`}
+            href={kayakHref}
             gradient="from-orange-500/20 to-orange-500/5"
           />
         </div>
@@ -601,14 +642,21 @@ function matchesFilter(a: Attraction, filter: AttractionFilter): boolean {
         /hik|trail|הליכ|טיול רגלי|שביל|מסלול|הר/.test(txt)
       );
     case "paid": {
-      // "paid" if there is a price AND it is not free
+      // "paid" if price explicitly set (non-free) OR name/description hints at a fee.
       const price = (a.price || "").toLowerCase();
-      if (!price) return false;
-      return !/חינם|free|0€|0 €/.test(price);
+      const freeRx = /חינם|free|ללא תשלום|חופשי|no charge|0€|0 €|0\$|0 \$/;
+      if (price && !freeRx.test(price)) return true;
+      // Keyword-based detection across Hebrew + English on name/desc/price.
+      const paidRx = /כרטיס|כניסה|תשלום|עלות|₪|ticket|entrance|admission|fee|price|\$|€/i;
+      return paidRx.test(txt) || paidRx.test(price);
     }
     case "free": {
       const price = (a.price || "").toLowerCase();
-      return !price || /חינם|free/.test(price);
+      const freeRx = /חינם|free|ללא תשלום|חופשי|no charge/i;
+      // Free if no price, explicit zero, free keyword in price, or free keyword in text.
+      if (!price) return true; // no price field → treat as likely free (legacy behavior)
+      if (/^0\b|חינם|free|ללא תשלום|חופשי|no charge/i.test(price)) return true;
+      return freeRx.test(txt);
     }
     case "kid_friendly":
       return !!a.kids_friendly || a.type === "kids" || /ילד|kid|children/.test(txt);
@@ -627,12 +675,8 @@ function WeatherStrip({
   hasCoordinates: boolean;
 }) {
   if (!hasCoordinates) {
-    return (
-      <div className="rounded-2xl glass p-4 flex items-center gap-3 text-sm text-muted-foreground">
-        <span className="text-2xl">🌤️</span>
-        מזג אוויר לא זמין ליעד זה
-      </div>
-    );
+    // No coordinates even after geocoding fallback — render nothing (rare).
+    return null;
   }
   if (loading) {
     return (
