@@ -20,7 +20,7 @@ stage-<N>_v<X.Y>_<YYYY-MM-DD>_<HH-MM>.md
 | 3b | destinations-expert | ✅ הושלם | 2026-04-17 | 14:53 | [stage-3b_v1.0_2026-04-17_14-53.md](stage-3b_v1.0_2026-04-17_14-53.md) |
 | 3c | destinations-expert | ✅ הושלם | 2026-04-17 | 14:58 | [stage-3c_v1.0_2026-04-17_14-58.md](stage-3c_v1.0_2026-04-17_14-58.md) |
 | 4 | logistics-expert | ✅ הושלם | 2026-04-17 | 15:11 | [stage-4_v1.0_2026-04-17_15-11.md](stage-4_v1.0_2026-04-17_15-11.md) |
-| 5 | database + ui-designer | ⏸️ ממתין | — | — | — |
+| 5 | database + ui-designer | ✅ הושלם | 2026-04-17 | 15:18 | [stage-5_v1.0_2026-04-17_15-18.md](stage-5_v1.0_2026-04-17_15-18.md) |
 | 6 | ui-designer | ✅ הושלם | 2026-04-17 | 15:04 | [stage-6_v1.0_2026-04-17_15-04.md](stage-6_v1.0_2026-04-17_15-04.md) |
 | 7 | database + destinations | ⏸️ ממתין | — | — | — |
 | 8 | recommendations-expert (חדש) | ⏸️ ממתין | — | — | — |

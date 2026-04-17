@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
@@ -8,6 +8,30 @@ import { ArrowLeft, Check, Smartphone, Wallet, Sparkles, TrendingUp, TrendingDow
 import { toast } from "sonner";
 import type { Expense, TripParticipant } from "@/lib/supabase/types";
 import { calculateBalances, minimizeTransfers, formatCurrency } from "@/lib/expense-calculator";
+import { useRealtimeTable } from "@/lib/hooks/use-realtime";
+
+interface ExpenseRow {
+  id: string;
+  trip_id: string;
+  paid_by: string;
+  amount: number | string;
+  currency: string;
+  description: string;
+}
+
+interface ExpensePayerRow {
+  id: string;
+  expense_id: string;
+  profile_id: string;
+  amount: number | string;
+}
+
+interface ExpenseSplitRow {
+  id: string;
+  expense_id: string;
+  profile_id: string;
+  amount: number | string;
+}
 
 interface Settlement {
   id: string;
@@ -66,6 +90,87 @@ export function BalanceDashboard({
     profileNames[p.profile_id] = (p.profile as any)?.full_name || "—";
     profilePhones[p.profile_id] = (p.profile as any)?.phone;
   });
+
+  // ---------------------------------------------------------------------
+  // Realtime sync — expenses, expense_payers, expense_splits, settlements
+  // ---------------------------------------------------------------------
+  // A small debounce coalesces bursts (e.g. an expense + its payers rows
+  // arriving within ms of each other) into a single router.refresh().
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleRefresh = () => {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    refreshTimerRef.current = setTimeout(() => {
+      router.refresh();
+      refreshTimerRef.current = null;
+    }, 250);
+  };
+
+  // Toast rate-limiter for expense inserts from other users
+  const toastTimesRef = useRef<number[]>([]);
+  const pendingCollapseRef = useRef<{ timer: ReturnType<typeof setTimeout> | null; count: number }>({
+    timer: null,
+    count: 0,
+  });
+  const TOAST_WINDOW_MS = 10_000;
+  const TOAST_MAX_IN_WINDOW = 5;
+
+  function notifyExpenseInsert(row: ExpenseRow) {
+    // Only notify if inserted by another user
+    if (row.paid_by === userId) return;
+    const now = Date.now();
+    toastTimesRef.current = toastTimesRef.current.filter((t) => now - t < TOAST_WINDOW_MS);
+    toastTimesRef.current.push(now);
+
+    if (toastTimesRef.current.length > TOAST_MAX_IN_WINDOW) {
+      const state = pendingCollapseRef.current;
+      state.count += 1;
+      if (state.timer) clearTimeout(state.timer);
+      state.timer = setTimeout(() => {
+        toast(`💰 ${state.count} הוצאות חדשות`);
+        state.count = 0;
+        state.timer = null;
+      }, 1200);
+      return;
+    }
+
+    const payerName = profileNames[row.paid_by] || "משתתף";
+    const currency = row.currency || "ILS";
+    const amountNum = Number(row.amount) || 0;
+    toast(`💰 ${payerName} הוסיף הוצאה: ${formatCurrency(amountNum, currency)} — ${row.description}`);
+  }
+
+  useRealtimeTable<ExpenseRow>("expenses", tripId, {
+    onInsert: (row) => {
+      notifyExpenseInsert(row);
+      scheduleRefresh();
+    },
+    onUpdate: () => scheduleRefresh(),
+    onDelete: () => scheduleRefresh(),
+  });
+
+  // expense_payers / expense_splits don't carry trip_id, so no filter —
+  // the hook subscribes to all rows and we simply refresh on any change
+  // for this trip's expense list. Volume is low.
+  useRealtimeTable<ExpensePayerRow>("expense_payers", undefined, {
+    filter: undefined,
+    onInsert: () => scheduleRefresh(),
+    onUpdate: () => scheduleRefresh(),
+    onDelete: () => scheduleRefresh(),
+  });
+
+  useRealtimeTable<ExpenseSplitRow>("expense_splits", undefined, {
+    filter: undefined,
+    onInsert: () => scheduleRefresh(),
+    onUpdate: () => scheduleRefresh(),
+    onDelete: () => scheduleRefresh(),
+  });
+
+  useEffect(() => {
+    return () => {
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+      if (pendingCollapseRef.current.timer) clearTimeout(pendingCollapseRef.current.timer);
+    };
+  }, []);
 
   // Calculate balances (all in ILS via fx_rate_to_ils)
   const balances = calculateBalances(expenses, participants, profileNames);
