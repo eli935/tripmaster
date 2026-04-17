@@ -1,5 +1,20 @@
 import type { Expense, ExpenseSplit, TripParticipant } from "./supabase/types";
 
+/**
+ * Convert an expense amount to ILS using the locked FX rate.
+ * Falls back to amount (assumes ILS) if rate missing.
+ */
+function toILS(expense: Expense): number {
+  const rate = (expense as any).fx_rate_to_ils;
+  if (rate && Number(rate) > 0) {
+    return Number(expense.amount) * Number(rate);
+  }
+  // Fallback for legacy rows
+  if (expense.currency === "EUR") return Number(expense.amount) * 4.05;
+  if (expense.currency === "USD") return Number(expense.amount) * 3.72;
+  return Number(expense.amount); // ILS assumed
+}
+
 interface Balance {
   profileId: string;
   name: string;
@@ -43,49 +58,48 @@ export function calculateBalances(
   }
 
   for (const expense of expenses) {
+    // CRITICAL: Convert to ILS using LOCKED rate so historical balances don't shift
+    const amountILS = toILS(expense);
+
     // Track private expenses separately (each family pays their own)
     if (expense.split_type === "private") {
       if (balances[expense.paid_by]) {
-        balances[expense.paid_by].totalPaid += expense.amount;
-        balances[expense.paid_by].totalOwed += expense.amount;
+        balances[expense.paid_by].totalPaid += amountILS;
+        balances[expense.paid_by].totalOwed += amountILS;
       }
       continue;
     }
 
     // Track what was paid for shared expenses
     if (balances[expense.paid_by]) {
-      balances[expense.paid_by].totalPaid += expense.amount;
+      balances[expense.paid_by].totalPaid += amountILS;
     }
 
     // Calculate what each person owes
     if (expense.split_type === "custom") {
-      // Custom: if explicit splits exist, use them.
-      // Otherwise, the OTHER participants owe the full amount (e.g. "רחיפה עקשטיין מלא")
       if (expense.splits && expense.splits.length > 0) {
         for (const split of expense.splits) {
           if (balances[split.profile_id]) {
-            balances[split.profile_id].totalOwed += split.amount;
+            // Split amounts are in expense currency — convert each
+            const rate = (expense as any).fx_rate_to_ils || 1;
+            balances[split.profile_id].totalOwed += Number(split.amount) * Number(rate);
           }
         }
       } else {
-        // Full amount owed by everyone except the payer
         const others = participants.filter((p) => p.profile_id !== expense.paid_by);
-        const perOther = expense.amount / others.length;
+        const perOther = amountILS / others.length;
         for (const p of others) {
           balances[p.profile_id].totalOwed += perOther;
         }
-        // Payer owes nothing for this expense (but already tracked as paid)
       }
     } else if (expense.split_type === "per_person") {
-      // Split by number of people (adults + children)
-      const perPerson = expense.amount / totalPeople;
+      const perPerson = amountILS / totalPeople;
       for (const p of participants) {
         const share = perPerson * (p.adults + p.children);
         balances[p.profile_id].totalOwed += share;
       }
     } else {
-      // Equal split between families
-      const perFamily = expense.amount / participants.length;
+      const perFamily = amountILS / participants.length;
       for (const p of participants) {
         balances[p.profile_id].totalOwed += perFamily;
       }

@@ -35,6 +35,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
     filesRes,
     permissionsRes,
     expensePayersRes,
+    settlementsRes,
   ] = await Promise.all([
     supabase.from("trip_participants").select("*, profile:profiles(*)").eq("trip_id", id),
     supabase.from("trip_days").select("*").eq("trip_id", id).order("date", { ascending: true }),
@@ -65,6 +66,12 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
     supabase
       .from("expense_payers")
       .select("*")
+      .then((r) => r, () => ({ data: [] })),
+    supabase
+      .from("settlements")
+      .select("*")
+      .eq("trip_id", id)
+      .order("settled_at", { ascending: false })
       .then((r) => r, () => ({ data: [] })),
   ]);
 
@@ -125,6 +132,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
         equipment={equipmentRes.data || []}
         expenses={expensesRes.data || []}
         expensePayers={expensePayersRes.data || []}
+        settlements={settlementsRes.data || []}
         shopping={shoppingRes.data || []}
         lessons={lessonsRes.data || []}
         files={filesRes.data || []}

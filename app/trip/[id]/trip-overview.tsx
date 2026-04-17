@@ -63,6 +63,7 @@ import { PermissionsManager } from "./permissions-manager";
 import { AdminPanel } from "./admin-panel";
 import { TripChat } from "./trip-chat";
 import { ExpenseDialog } from "./expense-dialog";
+import { BalanceDashboard } from "./balance-dashboard";
 import { DeleteButton } from "./delete-button";
 import type { TripPermission } from "@/lib/permissions";
 import type { ExpensePayer } from "@/lib/types-v8";
@@ -106,6 +107,7 @@ interface TripOverviewProps {
   rates: Record<string, number> | null;
   permissions: TripPermission[];
   expensePayers: ExpensePayer[];
+  settlements?: any[];
   zmanimMap?: Record<string, any>;
   userId: string;
 }
@@ -127,6 +129,7 @@ export function TripOverview({
   rates,
   permissions,
   expensePayers,
+  settlements = [],
   zmanimMap,
   userId,
 }: TripOverviewProps) {
@@ -277,6 +280,7 @@ export function TripOverview({
               tripId={trip.id}
               userId={userId}
               isAdmin={isAdmin}
+              settlements={settlements}
             />
           )}
           {activeTab === "files" && (
@@ -729,12 +733,14 @@ function ExpensesTab({
   tripId,
   userId,
   isAdmin,
+  settlements,
 }: {
   expenses: Expense[];
   participants: TripParticipant[];
   tripId: string;
   userId: string;
   isAdmin: boolean;
+  settlements: any[];
 }) {
   const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
@@ -745,57 +751,18 @@ function ExpensesTab({
   });
 
   const currentUserName = profileNames[userId] || "אני";
-  const balances = calculateBalances(expenses, participants, profileNames);
-  const transfers = minimizeTransfers(balances);
-  const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
-
-  // Per-family breakdown
-  const sharedExpenses = expenses.filter((e) => e.split_type !== "private");
-  const totalShared = sharedExpenses.reduce((s, e) => s + Number(e.amount), 0);
 
   return (
     <div className="space-y-4">
-      {/* Premium Summary */}
-      <GlowPulse className="rounded-2xl gradient-blue p-6 text-white">
-        <div className="text-center">
-          <div className="text-xs text-white/60 mb-1">סה״כ הוצאות טיול</div>
-          <div className="text-4xl font-bold tracking-tight">{formatCurrency(totalExpenses)}</div>
-          <div className="text-sm text-white/70 mt-1">{expenses.length} רשומות</div>
-        </div>
-      </GlowPulse>
-
-      {/* Per-family cards */}
-      <div className="grid grid-cols-2 gap-3">
-        {balances.map((b) => (
-          <div key={b.profileId} className="glass glass-hover rounded-2xl p-4 animate-fade-in-up">
-            <div className="text-xs text-muted-foreground mb-1">{b.name}</div>
-            <div className="text-lg font-bold">{formatCurrency(b.totalPaid)}</div>
-            <div className="text-xs text-muted-foreground">שילם</div>
-            <div className={`text-sm font-semibold mt-2 ${b.balance > 0 ? "text-green-400" : b.balance < 0 ? "text-red-400" : "text-muted-foreground"}`}>
-              {b.balance > 0 ? `מגיע לו ${formatCurrency(b.balance)}` : b.balance < 0 ? `חייב ${formatCurrency(Math.abs(b.balance))}` : "מאוזן"}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Balance / Transfers */}
-      {transfers.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">מאזן — מי חייב למי</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {transfers.map((t, i) => (
-              <div key={i} className="flex items-center justify-between text-sm p-2 bg-secondary rounded">
-                <span>
-                  <strong>{t.fromName}</strong> → <strong>{t.toName}</strong>
-                </span>
-                <Badge variant="destructive">{formatCurrency(t.amount)}</Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+      {/* Premium Balance Dashboard (v8.6) */}
+      <BalanceDashboard
+        tripId={tripId}
+        expenses={expenses}
+        participants={participants}
+        settlements={settlements}
+        userId={userId}
+        isAdmin={isAdmin}
+      />
 
       {/* Add Expense */}
       <div className="flex justify-between items-center">

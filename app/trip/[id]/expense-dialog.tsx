@@ -20,6 +20,7 @@ import { Plus, Trash2, Users, Calculator, Loader2, AlertCircle } from "lucide-re
 import { toast } from "sonner";
 import type { TripParticipant, ExpenseCategory, SplitType } from "@/lib/supabase/types";
 import { formatCurrency } from "@/lib/expense-calculator";
+import { getExchangeRate } from "@/lib/currency";
 
 const EXPENSE_CATEGORIES: Record<ExpenseCategory, string> = {
   flights: "טיסות ✈️",
@@ -127,6 +128,17 @@ export function ExpenseDialog({
     const primaryPayer = payers[0];
     const total = totalAmount;
 
+    // Lock FX rate to ILS at moment of creation (historical accuracy)
+    let fxRateToIls = 1;
+    if (currency !== "ILS") {
+      try {
+        const rates = await getExchangeRate(currency, ["ILS"]);
+        fxRateToIls = rates?.rates?.ILS || (currency === "EUR" ? 4.05 : 3.72);
+      } catch {
+        fxRateToIls = currency === "EUR" ? 4.05 : 3.72;
+      }
+    }
+
     const { data: expense, error } = await supabase
       .from("expenses")
       .insert({
@@ -137,6 +149,8 @@ export function ExpenseDialog({
         category,
         description,
         split_type: splitType,
+        fx_rate_to_ils: fxRateToIls,
+        fx_locked_at: new Date().toISOString(),
       })
       .select()
       .single();
