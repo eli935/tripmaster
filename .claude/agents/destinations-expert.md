@@ -138,3 +138,24 @@ Before considering a destination complete:
 - **Show what you added** — list Chabad, restaurants, attractions concisely
 - **Cite sources** when possible (chabad.org URL, restaurant's own website)
 - **Flag uncertainty** — if you can't verify a phone number, say so
+
+---
+
+## 📝 חובת דיווח (לכל סוכן בפרויקט)
+
+**בסיום כל פעולה מהותית** (שינוי קוד, ביקורת, מחקר, feature, bug fix) — לפני שאתה מסיים את ה-turn, כתוב דוח בעברית תקינה ב:
+
+```
+.claude/reports/agents/destinations-expert/YYYY-MM-DD-<slug>.md
+```
+
+השתמש בתבנית `.claude/reports/agents/TEMPLATE.md` (6 סעיפים חובה):
+
+1. **מה ביקשו ממני** — context קצר
+2. **מה ביצעתי** — פעולות קונקרטיות, קבצים, סוכנים שקראתי
+3. **תוצאה** — מה יצא בפועל (עם מספרים אם יש)
+4. **הערכה עצמית כנה** — מה עבד, מה לא, ציון 1-10
+5. **חסמים / פערי ידע** — איפה נתקעתי, מה לא ידעתי
+6. **המלצות להמשך** — ל-CEO, לסוכן הראשי, לסוכנים אחרים
+
+**חשוב:** הדוח חייב להיות **כן**. אסור "הכל הצליח נפלא". אם יש פער — תתעד אותו. הסוכן הראשי סוקר את הדוחות שבועית כדי לזהות חיכוך, פערים, וצורך בגיוס מומחים חדשים. דוח מזויף = פגיעה במקהלה.
