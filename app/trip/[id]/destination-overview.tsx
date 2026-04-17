@@ -31,11 +31,31 @@ import {
   Home,
   Search,
   Fish,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { useRealtimeTable } from "@/lib/hooks/use-realtime";
 import type { DestinationInfo, Attraction } from "@/lib/destinations";
 import type { Trip, TripDay } from "@/lib/supabase/types";
+
+interface DayBooking {
+  attraction_id: string;
+  attraction_name: string;
+  time: string | null;
+  created_at: string;
+}
+
+type TripDayWithBookings = TripDay & { bookings?: DayBooking[] | null };
+
+const DAY_TYPE_LABELS: Record<string, string> = {
+  chol: "חול",
+  shabbat: "שבת",
+  erev_chag: "ערב חג",
+  chag: "חג",
+  chol_hamoed: "חול המועד",
+  shabbat_chol_hamoed: "שבת חוה״מ",
+};
 import { fetchWeather, geocode, type WeatherDay } from "@/lib/weather";
 
 type AttractionFilter = "all" | "hiking" | "paid" | "free" | "kid_friendly";
@@ -389,6 +409,11 @@ export function DestinationOverview({
         loading={weatherLoading}
         hasCoordinates={!!effectiveCoords}
       />
+
+      {/* Daily Plan (bookings per day) */}
+      {trip?.id && (
+        <DailyPlan tripId={trip.id} initialDays={days as TripDayWithBookings[]} />
+      )}
 
       {/* Local Customs (international only) */}
       {!isDomestic && (
@@ -1625,6 +1650,123 @@ function WhatsHotCard({
         </div>
       )}
     </motion.div>
+  );
+}
+
+function DailyPlan({
+  tripId,
+  initialDays,
+}: {
+  tripId: string;
+  initialDays: TripDayWithBookings[];
+}) {
+  const [days, setDays] = useState<TripDayWithBookings[]>(initialDays);
+
+  useEffect(() => {
+    setDays(initialDays);
+  }, [initialDays]);
+
+  useRealtimeTable<TripDayWithBookings>("trip_days", tripId, {
+    onUpdate: (row) => {
+      setDays((prev) =>
+        prev.map((d) => (d.id === row.id ? { ...d, bookings: row.bookings } : d))
+      );
+    },
+    onInsert: (row) => {
+      setDays((prev) => (prev.some((d) => d.id === row.id) ? prev : [...prev, row]));
+    },
+  });
+
+  const daysWithBookings = days
+    .map((d) => ({ day: d, bookings: (d.bookings ?? []) as DayBooking[] }))
+    .filter((x) => x.bookings.length > 0)
+    .sort((a, b) => a.day.date.localeCompare(b.day.date));
+
+  async function removeBooking(dayId: string, attractionId: string) {
+    const target = days.find((d) => d.id === dayId);
+    const existing = (target?.bookings ?? []) as DayBooking[];
+    const next = existing.filter((b) => b.attraction_id !== attractionId);
+    // Optimistic update
+    setDays((prev) => prev.map((d) => (d.id === dayId ? { ...d, bookings: next } : d)));
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("trip_days")
+        .update({ bookings: next })
+        .eq("id", dayId);
+      if (error) throw error;
+      toast.success("ההזמנה נמחקה");
+    } catch {
+      // Rollback
+      setDays((prev) => prev.map((d) => (d.id === dayId ? { ...d, bookings: existing } : d)));
+      toast.error("שגיאה במחיקת ההזמנה");
+    }
+  }
+
+  return (
+    <Section title="תוכנית יומית" icon="📅" delay={0.16}>
+      {daysWithBookings.length === 0 ? (
+        <div className="rounded-2xl glass p-4 text-xs text-muted-foreground text-center">
+          התוכנית היומית תתעדכן אוטומטית כשתשריין אטרקציות
+        </div>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">
+          {daysWithBookings.map(({ day, bookings }) => {
+            const dt = new Date(day.date);
+            const dateLabel = dt.toLocaleDateString("he-IL", {
+              weekday: "long",
+              day: "numeric",
+              month: "numeric",
+            });
+            return (
+              <motion.div
+                key={day.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-2xl glass glass-hover p-4 space-y-3 border border-[var(--gold-500)]/20"
+              >
+                <div className="flex items-center justify-between gap-2 pb-2 border-b border-white/10">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-[var(--gold-200)]">{dateLabel}</span>
+                    {day.hebrew_date && (
+                      <span className="text-[11px] text-muted-foreground">{day.hebrew_date}</span>
+                    )}
+                  </div>
+                  {day.day_type && day.day_type !== "chol" && (
+                    <Badge variant="secondary" className="text-[10px] shrink-0">
+                      {DAY_TYPE_LABELS[day.day_type] ?? day.day_type}
+                    </Badge>
+                  )}
+                </div>
+                <ul className="space-y-1.5">
+                  {bookings.map((b) => (
+                    <li
+                      key={b.attraction_id}
+                      className="flex items-center gap-2 text-xs rounded-lg bg-white/5 px-2.5 py-1.5 hover:bg-white/10 transition-colors"
+                    >
+                      <span className="text-[var(--gold-200)]">✦</span>
+                      <span className="flex-1 min-w-0 truncate">{b.attraction_name}</span>
+                      {b.time && (
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          🕐 {b.time}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => removeBooking(day.id, b.attraction_id)}
+                        className="shrink-0 text-muted-foreground hover:text-red-400 p-0.5 rounded transition-colors"
+                        aria-label="מחק הזמנה"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+    </Section>
   );
 }
 
