@@ -1293,9 +1293,49 @@ function JewishServicesGrid({ destinationQuery }: { destinationQuery: string }) 
   );
 }
 
+interface FlightStatusRow {
+  flight_number: string;
+  scheduled_datetime: string;
+  current_datetime: string | null;
+  current_terminal: string | null;
+  status: string | null;
+  checked_at: string | null;
+}
+
 function FlightSummary({ trip, isDomestic }: { trip: Trip; isDomestic: boolean }) {
   const hasOut = !!(trip.outbound_flight_number || trip.outbound_flight_datetime);
   const hasRet = !!(trip.return_flight_number || trip.return_flight_datetime);
+
+  // Latest flight_status_log record per flight_number (Stage 7).
+  const [statusMap, setStatusMap] = useState<Record<string, FlightStatusRow>>({});
+  useEffect(() => {
+    if (isDomestic || (!hasOut && !hasRet)) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("flight_status_log")
+          .select(
+            "flight_number, scheduled_datetime, current_datetime, current_terminal, status, checked_at"
+          )
+          .eq("trip_id", trip.id)
+          .order("checked_at", { ascending: false });
+        if (cancelled || !data) return;
+        const latest: Record<string, FlightStatusRow> = {};
+        for (const row of data as FlightStatusRow[]) {
+          if (!latest[row.flight_number]) latest[row.flight_number] = row;
+        }
+        setStatusMap(latest);
+      } catch {
+        /* non-fatal */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [trip.id, isDomestic, hasOut, hasRet]);
+
   if (!hasOut && !hasRet) return null;
 
   const fmt = (iso?: string | null) => {
@@ -1338,6 +1378,8 @@ function FlightSummary({ trip, isDomestic }: { trip: Trip; isDomestic: boolean }
             airport={trip.outbound_airport}
             terminal={trip.outbound_terminal}
             datetime={fmt(trip.outbound_flight_datetime)}
+            scheduledIso={trip.outbound_flight_datetime}
+            live={trip.outbound_flight_number ? statusMap[trip.outbound_flight_number] : undefined}
           />
         )}
         {hasRet && (
@@ -1347,6 +1389,8 @@ function FlightSummary({ trip, isDomestic }: { trip: Trip; isDomestic: boolean }
             airport={trip.return_airport}
             terminal={trip.return_terminal}
             datetime={fmt(trip.return_flight_datetime)}
+            scheduledIso={trip.return_flight_datetime}
+            live={trip.return_flight_number ? statusMap[trip.return_flight_number] : undefined}
           />
         )}
       </div>
@@ -1360,18 +1404,62 @@ function FlightLine({
   airport,
   terminal,
   datetime,
+  scheduledIso,
+  live,
 }: {
   label: string;
   number?: string | null;
   airport?: string | null;
   terminal?: string | null;
   datetime?: string;
+  scheduledIso?: string | null;
+  live?: FlightStatusRow;
 }) {
+  // Compute live-status badge (Stage 7).
+  let statusBadge: { text: string; cls: string } | null = null;
+  if (live) {
+    const status = live.status;
+    if (status === "cancelled") {
+      statusBadge = {
+        text: "🚫 בוטלה",
+        cls: "bg-red-500/20 border-red-500/40 text-red-200",
+      };
+    } else if (status === "delayed" && scheduledIso && live.current_datetime) {
+      const delayMin = Math.round(
+        (new Date(live.current_datetime).getTime() -
+          new Date(scheduledIso).getTime()) /
+          60000
+      );
+      if (delayMin >= 5) {
+        statusBadge = {
+          text: `⚠️ עיכוב ${delayMin} דק׳`,
+          cls: "bg-yellow-500/20 border-yellow-500/40 text-yellow-200",
+        };
+      }
+    } else if (
+      live.current_terminal &&
+      terminal &&
+      String(live.current_terminal) !== String(terminal)
+    ) {
+      statusBadge = {
+        text: `🔄 טרמינל שונה: T${live.current_terminal}`,
+        cls: "bg-orange-500/20 border-orange-500/40 text-orange-200",
+      };
+    }
+  }
+
   return (
     <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-xs">
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2 mb-1 flex-wrap">
         <Badge variant="secondary" className="text-[10px]">{label}</Badge>
         {number && <span className="font-semibold tracking-wide" dir="ltr">{number}</span>}
+        {statusBadge && (
+          <span
+            className={`text-[10px] px-2 py-0.5 rounded-full border ${statusBadge.cls}`}
+          >
+            {statusBadge.text}
+          </span>
+        )}
       </div>
       <div className="text-muted-foreground">
         {airport && <span dir="ltr">{airport}</span>}
