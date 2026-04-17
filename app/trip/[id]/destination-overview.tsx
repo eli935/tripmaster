@@ -64,8 +64,14 @@ export function DestinationOverview({
   const [weatherLoading, setWeatherLoading] = useState(false);
   // Coordinates resolved via geocoding fallback when DESTINATIONS_DB has none.
   const [geoCoords, setGeoCoords] = useState<{ lat: number; lng: number } | null>(null);
+  // Geocoded coordinates for each Chabad house, keyed by address.
+  const [chabadCoords, setChabadCoords] = useState<Record<string, { lat: number; lng: number }>>({});
 
   const isDomestic = trip?.location_type === "domestic";
+  const accLat = trip?.accommodation_lat ?? null;
+  const accLng = trip?.accommodation_lng ?? null;
+  const hasAccommodation =
+    !isDomestic && typeof accLat === "number" && typeof accLng === "number";
   const destinationQuery = encodeURIComponent(trip?.destination || destination.country);
 
   // Affiliate-aware URLs. Env vars fall back to empty strings; clean URLs when unset.
@@ -164,6 +170,32 @@ export function DestinationOverview({
     })();
   }, [weather, trip?.country_code]);
 
+  // Geocode Chabad addresses when we have accommodation coordinates.
+  // Runs once per unique address. Failures are silent (no badge is shown).
+  useEffect(() => {
+    if (!hasAccommodation) return;
+    let cancelled = false;
+    const addrs = destination.chabad
+      .map((c) => c.address)
+      .filter((a): a is string => !!a && !chabadCoords[a]);
+    if (addrs.length === 0) return;
+    (async () => {
+      for (const addr of addrs) {
+        const g = await geocode(addr);
+        if (cancelled) return;
+        if (g) {
+          setChabadCoords((prev) => ({
+            ...prev,
+            [addr]: { lat: g.lat, lng: g.lng },
+          }));
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasAccommodation, destination.chabad, chabadCoords]);
+
   // Filter attractions client-side based on tags/keywords/fields.
   const filteredAttractions = useMemo(() => {
     if (filter === "all") return destination.attractions;
@@ -232,6 +264,11 @@ export function DestinationOverview({
           </motion.div>
         </div>
       </motion.div>
+
+      {/* Flight Summary */}
+      {trip && (
+        <FlightSummary trip={trip} isDomestic={isDomestic} />
+      )}
 
       {/* Weather Strip */}
       <WeatherStrip
@@ -326,6 +363,14 @@ export function DestinationOverview({
                   <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
                   <span>{ch.address}</span>
                 </div>
+                {hasAccommodation && chabadCoords[ch.address] && (
+                  <WalkingBadge
+                    fromLat={accLat as number}
+                    fromLng={accLng as number}
+                    toLat={chabadCoords[ch.address].lat}
+                    toLng={chabadCoords[ch.address].lng}
+                  />
+                )}
                 {ch.services && (
                   <div className="flex flex-wrap gap-1">
                     {ch.services.map((s, j) => (
@@ -937,6 +982,136 @@ function Section({
       </h3>
       {children}
     </motion.section>
+  );
+}
+
+// Haversine distance in kilometers between two lat/lng pairs.
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+function WalkingBadge({
+  fromLat,
+  fromLng,
+  toLat,
+  toLng,
+}: {
+  fromLat: number;
+  fromLng: number;
+  toLat: number;
+  toLng: number;
+}) {
+  const km = haversineKm(fromLat, fromLng, toLat, toLng);
+  // Avg walking speed: 80 m/min → 4.8 km/h
+  const walkMin = Math.ceil((km * 1000) / 80);
+  if (walkMin <= 30) {
+    return (
+      <Badge variant="secondary" className="text-xs bg-green-500/15 text-green-400 border-0 w-fit">
+        🚶 {walkMin} דק׳ הליכה
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="secondary" className="text-xs bg-blue-500/15 text-blue-400 border-0 w-fit">
+      🚗 {km.toFixed(1)} ק״מ
+    </Badge>
+  );
+}
+
+function FlightSummary({ trip, isDomestic }: { trip: Trip; isDomestic: boolean }) {
+  const hasOut = !!(trip.outbound_flight_number || trip.outbound_flight_datetime);
+  const hasRet = !!(trip.return_flight_number || trip.return_flight_datetime);
+  if (!hasOut && !hasRet) return null;
+
+  const fmt = (iso?: string | null) => {
+    if (!iso) return "";
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return "";
+      return d.toLocaleString("he-IL", {
+        weekday: "short",
+        day: "numeric",
+        month: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "";
+    }
+  };
+
+  const title = isDomestic ? "🚗 נסיעה" : "✈️ טיסות";
+  const outLabel = isDomestic ? "יציאה" : "הלוך";
+  const retLabel = isDomestic ? "חזרה" : "חזור";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1 }}
+      className="rounded-2xl glass p-4"
+    >
+      <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+        <Plane className="h-4 w-4 text-teal-400" />
+        {title}
+      </h3>
+      <div className="grid gap-2 md:grid-cols-2">
+        {hasOut && (
+          <FlightLine
+            label={outLabel}
+            number={trip.outbound_flight_number}
+            airport={trip.outbound_airport}
+            terminal={trip.outbound_terminal}
+            datetime={fmt(trip.outbound_flight_datetime)}
+          />
+        )}
+        {hasRet && (
+          <FlightLine
+            label={retLabel}
+            number={trip.return_flight_number}
+            airport={trip.return_airport}
+            terminal={trip.return_terminal}
+            datetime={fmt(trip.return_flight_datetime)}
+          />
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+function FlightLine({
+  label,
+  number,
+  airport,
+  terminal,
+  datetime,
+}: {
+  label: string;
+  number?: string | null;
+  airport?: string | null;
+  terminal?: string | null;
+  datetime?: string;
+}) {
+  return (
+    <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-xs">
+      <div className="flex items-center gap-2 mb-1">
+        <Badge variant="secondary" className="text-[10px]">{label}</Badge>
+        {number && <span className="font-semibold tracking-wide" dir="ltr">{number}</span>}
+      </div>
+      <div className="text-muted-foreground">
+        {airport && <span dir="ltr">{airport}</span>}
+        {terminal && <span> · טרמינל {terminal}</span>}
+      </div>
+      {datetime && <div className="text-muted-foreground mt-0.5">{datetime}</div>}
+    </div>
   );
 }
 

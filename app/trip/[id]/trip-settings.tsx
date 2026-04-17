@@ -23,9 +23,13 @@ import {
   Loader2,
   UserMinus,
   AlertTriangle,
+  Plane,
+  Building2,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Trip, TripParticipant, TripStatus, HolidayType } from "@/lib/supabase/types";
+import { geocode } from "@/lib/weather";
 
 const STATUS_OPTIONS: { value: TripStatus; label: string }[] = [
   { value: "planning", label: "בתכנון" },
@@ -53,6 +57,127 @@ export function TripSettings({ trip, participants, userId, isAdmin }: TripSettin
   const [status, setStatus] = useState<TripStatus>(trip.status as TripStatus);
   const [startDate, setStartDate] = useState(trip.start_date);
   const [endDate, setEndDate] = useState(trip.end_date);
+
+  const isDomestic = trip.location_type === "domestic";
+
+  // ── Accommodation ───────────────────────────────────────────────
+  const [accName, setAccName] = useState(trip.accommodation_name ?? "");
+  const [accAddress, setAccAddress] = useState(trip.accommodation_address ?? "");
+  const [accLat, setAccLat] = useState<number | null>(trip.accommodation_lat ?? null);
+  const [accLng, setAccLng] = useState<number | null>(trip.accommodation_lng ?? null);
+  const [accGeocoding, setAccGeocoding] = useState(false);
+  const [accSavingFields, setAccSavingFields] = useState(false);
+
+  // ── Flights ─────────────────────────────────────────────────────
+  const [outFlight, setOutFlight] = useState(trip.outbound_flight_number ?? "");
+  const [outDatetime, setOutDatetime] = useState(trip.outbound_flight_datetime ?? "");
+  const [outAirport, setOutAirport] = useState(trip.outbound_airport ?? "");
+  const [outTerminal, setOutTerminal] = useState(trip.outbound_terminal ?? "");
+  const [retFlight, setRetFlight] = useState(trip.return_flight_number ?? "");
+  const [retDatetime, setRetDatetime] = useState(trip.return_flight_datetime ?? "");
+  const [retAirport, setRetAirport] = useState(trip.return_airport ?? "");
+  const [retTerminal, setRetTerminal] = useState(trip.return_terminal ?? "");
+  const [savingFlights, setSavingFlights] = useState(false);
+
+  async function parseFlight(
+    flightNumber: string,
+    date: string,
+    setAirport: (v: string) => void,
+    setTerminal: (v: string) => void,
+    // Only auto-fill if current field is empty — don't clobber user overrides.
+    currentAirport: string,
+    currentTerminal: string
+  ) {
+    if (!flightNumber.trim()) return;
+    try {
+      const res = await fetch("/api/flights/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ flightNumber, date }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.airport && !currentAirport) setAirport(data.airport);
+      if (data.terminal && !currentTerminal) setTerminal(data.terminal);
+    } catch {
+      /* silent — user can fill manually */
+    }
+  }
+
+  async function geocodeAddress(addr: string) {
+    const q = addr.trim();
+    if (!q) {
+      setAccLat(null);
+      setAccLng(null);
+      return;
+    }
+    setAccGeocoding(true);
+    try {
+      const g = await geocode(q);
+      if (g) {
+        setAccLat(g.lat);
+        setAccLng(g.lng);
+        // Persist silently.
+        await supabase
+          .from("trips")
+          .update({
+            accommodation_address: q,
+            accommodation_lat: g.lat,
+            accommodation_lng: g.lng,
+          })
+          .eq("id", trip.id);
+      } else {
+        setAccLat(null);
+        setAccLng(null);
+      }
+    } finally {
+      setAccGeocoding(false);
+    }
+  }
+
+  async function saveAccommodation() {
+    setAccSavingFields(true);
+    const { error } = await supabase
+      .from("trips")
+      .update({
+        accommodation_name: accName || null,
+        accommodation_address: accAddress || null,
+        accommodation_lat: accLat,
+        accommodation_lng: accLng,
+      })
+      .eq("id", trip.id);
+    setAccSavingFields(false);
+    if (error) {
+      toast.error("שגיאה בשמירת פרטי לינה");
+      return;
+    }
+    toast.success("פרטי הלינה נשמרו");
+    router.refresh();
+  }
+
+  async function saveFlights() {
+    setSavingFlights(true);
+    const { error } = await supabase
+      .from("trips")
+      .update({
+        outbound_flight_number: outFlight || null,
+        outbound_flight_datetime: outDatetime || null,
+        outbound_airport: outAirport || null,
+        outbound_terminal: outTerminal || null,
+        return_flight_number: retFlight || null,
+        return_flight_datetime: retDatetime || null,
+        return_airport: retAirport || null,
+        return_terminal: retTerminal || null,
+      })
+      .eq("id", trip.id);
+    setSavingFlights(false);
+    if (error) {
+      toast.error("שגיאה בשמירת פרטי טיסה");
+      return;
+    }
+    toast.success("פרטי הטיסות נשמרו");
+    router.refresh();
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -194,6 +319,185 @@ export function TripSettings({ trip, participants, userId, isAdmin }: TripSettin
                 {saving ? "שומר..." : "שמור שינויים"}
               </Button>
             </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Accommodation (admin only) */}
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              🏨 לינה
+            </CardTitle>
+            <CardDescription>מלון / וילה — כתובת גיאוקוד אוטומטית</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>שם המלון / הוילה</Label>
+              <Input
+                value={accName}
+                onChange={(e) => setAccName(e.target.value)}
+                placeholder="לדוגמה: Dukley Hotel"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                כתובת
+                {accLat !== null && accLng !== null && (
+                  <span
+                    className="inline-flex items-center gap-1 text-green-500 text-xs"
+                    title={`${accLat.toFixed(4)}, ${accLng.toFixed(4)}`}
+                  >
+                    <Check className="h-3 w-3" />
+                    מזוהה
+                  </span>
+                )}
+                {accGeocoding && <Loader2 className="h-3 w-3 animate-spin" />}
+              </Label>
+              <Input
+                value={accAddress}
+                onChange={(e) => setAccAddress(e.target.value)}
+                onBlur={(e) => geocodeAddress(e.target.value)}
+                placeholder="רחוב, עיר, מדינה"
+              />
+            </div>
+            <Button onClick={saveAccommodation} className="w-full" disabled={accSavingFields}>
+              {accSavingFields ? (
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="ml-2 h-4 w-4" />
+              )}
+              שמור פרטי לינה
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Flights (admin only) */}
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Plane className="h-4 w-4" />
+              {isDomestic ? "🚗 נסיעה" : "✈️ פרטי טיסות"}
+            </CardTitle>
+            <CardDescription>
+              מספר טיסה יזהה אוטומטית את שדה התעופה והטרמינל
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {/* Outbound */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground">
+                {isDomestic ? "יציאה" : "טיסת הלוך"}
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>מספר טיסה</Label>
+                  <Input
+                    value={outFlight}
+                    onChange={(e) => setOutFlight(e.target.value)}
+                    onBlur={() =>
+                      parseFlight(outFlight, outDatetime, setOutAirport, setOutTerminal, outAirport, outTerminal)
+                    }
+                    placeholder="LY315"
+                    dir="ltr"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>מועד</Label>
+                  <Input
+                    type="datetime-local"
+                    value={outDatetime}
+                    onChange={(e) => setOutDatetime(e.target.value)}
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>שדה תעופה</Label>
+                  <Input
+                    value={outAirport}
+                    onChange={(e) => setOutAirport(e.target.value)}
+                    placeholder="TLV"
+                    dir="ltr"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>טרמינל</Label>
+                  <Input
+                    value={outTerminal}
+                    onChange={(e) => setOutTerminal(e.target.value)}
+                    placeholder="3"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Return */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground">
+                {isDomestic ? "חזרה" : "טיסת חזור"}
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>מספר טיסה</Label>
+                  <Input
+                    value={retFlight}
+                    onChange={(e) => setRetFlight(e.target.value)}
+                    onBlur={() =>
+                      parseFlight(retFlight, retDatetime, setRetAirport, setRetTerminal, retAirport, retTerminal)
+                    }
+                    placeholder="LY316"
+                    dir="ltr"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>מועד</Label>
+                  <Input
+                    type="datetime-local"
+                    value={retDatetime}
+                    onChange={(e) => setRetDatetime(e.target.value)}
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>שדה תעופה</Label>
+                  <Input
+                    value={retAirport}
+                    onChange={(e) => setRetAirport(e.target.value)}
+                    placeholder="TLV"
+                    dir="ltr"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>טרמינל</Label>
+                  <Input
+                    value={retTerminal}
+                    onChange={(e) => setRetTerminal(e.target.value)}
+                    placeholder="3"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Button onClick={saveFlights} className="w-full" disabled={savingFlights}>
+              {savingFlights ? (
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="ml-2 h-4 w-4" />
+              )}
+              שמור פרטי טיסה
+            </Button>
           </CardContent>
         </Card>
       )}
