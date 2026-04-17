@@ -5,6 +5,7 @@ import { TripOverview } from "./trip-overview";
 import { findDestination } from "@/lib/destinations";
 import { getOrGenerateDestination } from "@/lib/destination-generator";
 import { getExchangeRate } from "@/lib/currency";
+import { fetchZmanimForDates } from "@/lib/halacha/zmanim";
 
 export default async function TripPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -89,10 +90,29 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
 
   const meals = mealsRes.data || [];
   const mealIds = meals.map((m: any) => m.id);
-  const { data: mealItems } =
+
+  // Parallel: meal_items + zmanim for all trip days
+  const destination = currencyRes.destination;
+  const minhagMinutes = profile?.minhag_candle_minutes || 18;
+
+  const [mealItemsRes, zmanimMap] = await Promise.all([
     mealIds.length > 0
-      ? await supabase.from("meal_items").select("*").in("meal_id", mealIds)
-      : { data: [] };
+      ? supabase.from("meal_items").select("*").in("meal_id", mealIds)
+      : Promise.resolve({ data: [] }),
+    (async () => {
+      if (!destination?.coordinates || days.length === 0) return {};
+      const { lat, lng, tz } = destination.coordinates;
+      const dates = days.map((d: any) => d.date);
+      try {
+        return await fetchZmanimForDates(lat, lng, tz, dates, minhagMinutes);
+      } catch (e) {
+        console.error("[zmanim] bulk fetch error:", e);
+        return {};
+      }
+    })(),
+  ]);
+
+  const mealItems = mealItemsRes.data || [];
 
   return (
     <AppShell userName={profile?.full_name}>
@@ -111,6 +131,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
         destination={currencyRes.destination}
         rates={currencyRes.rates}
         permissions={permissionsRes.data || []}
+        zmanimMap={zmanimMap}
         userId={user.id}
       />
     </AppShell>

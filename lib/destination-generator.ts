@@ -93,7 +93,13 @@ export async function generateDestinationData(
     "google_maps": "https://maps.google.com/?q=..."
   },
   "weather_note": "מזג אוויר עדכני (אם עונה רלוונטית)",
-  "halachic_notes": ["2-4 הערות הלכתיות ספציפיות ליעד"]
+  "halachic_notes": ["2-4 הערות הלכתיות ספציפיות ליעד"],
+  "coordinates": {
+    "lat": 41.9028,
+    "lng": 12.4964,
+    "tz": "Europe/Rome",
+    "geonameid": 3169070
+  }
 }
 
 הנחיות:
@@ -102,7 +108,8 @@ export async function generateDestinationData(
 - ספק 6-10 אטרקציות, לפחות חלקן מתאימות לילדים ולשבת
 - השתמש בקישורי Unsplash אמיתיים ומתאימים לאטמוספרה של היעד (photo-XXXXX)
 - כל הקישורים ל-Google Maps חייבים להתחיל ב-https://maps.google.com/?q=
-- כל הטלפונים עם + וקוד מדינה`;
+- כל הטלפונים עם + וקוד מדינה
+- CRITICAL: שדה coordinates חובה! lat+lng+tz (IANA timezone) של מרכז העיר. geonameid אופציונלי (רק אם בטוח).`;
 
   try {
     const response = await client.messages.create({

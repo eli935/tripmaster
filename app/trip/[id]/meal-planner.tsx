@@ -30,6 +30,7 @@ import {
 import { toast } from "sonner";
 import type { TripDay, Meal, MealItem, DayType, MealType } from "@/lib/supabase/types";
 import { MealIngredients } from "./meal-ingredients";
+import { ZmanimCard } from "./zmanim-card";
 import { DAY_TYPE_LABELS, DAY_TYPE_COLORS, getDefaultMeals } from "@/lib/hebrew-calendar";
 
 const MEAL_ICONS: Record<string, React.ReactNode> = {
@@ -56,9 +57,10 @@ interface MealPlannerProps {
   mealItems: MealItem[];
   tripId: string;
   totalPeople: number;
+  zmanimMap?: Record<string, any>;
 }
 
-export function MealPlanner({ days, meals, mealItems, tripId, totalPeople }: MealPlannerProps) {
+export function MealPlanner({ days, meals, mealItems, tripId, totalPeople, zmanimMap }: MealPlannerProps) {
   const router = useRouter();
   const supabase = createClient();
   const [expandedDay, setExpandedDay] = useState<string | null>(days[0]?.id || null);
@@ -213,6 +215,10 @@ export function MealPlanner({ days, meals, mealItems, tripId, totalPeople }: Mea
             {/* Day Content */}
             {isExpanded && (
               <CardContent className="pt-3 space-y-2">
+                {/* Halachic times (zmanim) */}
+                {zmanimMap?.[day.date] && (
+                  <ZmanimCard zmanim={zmanimMap[day.date]} dayType={day.day_type} />
+                )}
                 {dayMeals.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-2">
                     אין ארוחות מתוכננות ליום זה

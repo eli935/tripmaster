@@ -106,6 +106,7 @@ interface TripOverviewProps {
   rates: Record<string, number> | null;
   permissions: TripPermission[];
   expensePayers: ExpensePayer[];
+  zmanimMap?: Record<string, any>;
   userId: string;
 }
 
@@ -126,6 +127,7 @@ export function TripOverview({
   rates,
   permissions,
   expensePayers,
+  zmanimMap,
   userId,
 }: TripOverviewProps) {
   const [activeTab, setActiveTab] = useState<Tab>(destination ? "destination" : "overview");
@@ -251,7 +253,7 @@ export function TripOverview({
             />
           )}
           {activeTab === "meals" && (
-            <MealPlanner days={days} meals={meals} mealItems={mealItems} tripId={trip.id} totalPeople={totalPeople} />
+            <MealPlanner days={days} meals={meals} mealItems={mealItems} tripId={trip.id} totalPeople={totalPeople} zmanimMap={zmanimMap} />
           )}
           {activeTab === "equipment" && (
             <EquipmentTab

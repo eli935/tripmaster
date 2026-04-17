@@ -69,6 +69,12 @@ export interface DestinationInfo {
   airport: { name: string; code: string; address: string; google_maps: string };
   weather_note?: string;
   halachic_notes?: string[];
+  coordinates?: {
+    lat: number;
+    lng: number;
+    tz: string;       // IANA timezone, e.g. "Europe/Rome"
+    geonameid?: number;
+  };
 }
 
 // ========= MONTENEGRO =========
@@ -298,6 +304,7 @@ export const MONTENEGRO: DestinationInfo = {
     "בשרי טרי: מביאים מהארץ (קפוא)",
     "חלב ישראל: רק דרך בית חב״ד בהזמנה מראש",
   ],
+  coordinates: { lat: 42.2864, lng: 18.8400, tz: "Europe/Podgorica", geonameid: 3204541 },
 };
 
 // ========= ITALY — ROME =========
@@ -413,6 +420,7 @@ export const ROME: DestinationInfo = {
     address: "Fiumicino, Rome",
     google_maps: "https://maps.google.com/?q=Fiumicino+Airport",
   },
+  coordinates: { lat: 41.9028, lng: 12.4964, tz: "Europe/Rome", geonameid: 3169070 },
 };
 
 // ========= GREECE — ATHENS =========
@@ -474,6 +482,7 @@ export const ATHENS: DestinationInfo = {
     address: "Athens, Greece",
     google_maps: "https://maps.google.com/?q=Athens+Airport",
   },
+  coordinates: { lat: 37.9838, lng: 23.7275, tz: "Europe/Athens", geonameid: 264371 },
 };
 
 export const DESTINATIONS_DB: Record<string, DestinationInfo> = {
