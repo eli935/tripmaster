@@ -29,20 +29,61 @@ export interface TripFile {
   file_url: string;
   file_size: number;
   category: FileCategory;
-  description: string | null;
+  description: string;
+  image_url: string | null;
   created_at: string;
 }
 
 /**
- * Upload a file to Supabase Storage and create a DB record
+ * Upload a thumbnail image to Supabase Storage under <tripId>/thumbs/.
+ * Returns the public URL, or null on failure.
+ */
+export async function uploadThumbnail(
+  imageFile: File,
+  tripId: string
+): Promise<string | null> {
+  const supabase = createClient();
+  const ext = imageFile.name.split(".").pop() || "jpg";
+  const thumbPath = `${tripId}/thumbs/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+
+  const { error: thumbErr } = await supabase.storage
+    .from("trip-files")
+    .upload(thumbPath, imageFile, { cacheControl: "3600", upsert: false });
+
+  if (thumbErr) {
+    console.error("Thumb upload error:", thumbErr);
+    return null;
+  }
+
+  const { data: thumbUrl } = supabase.storage
+    .from("trip-files")
+    .getPublicUrl(thumbPath);
+
+  return thumbUrl.publicUrl;
+}
+
+/**
+ * Upload a file to Supabase Storage and create a DB record.
+ * Strict: description and image_url are MANDATORY.
  */
 export async function uploadTripFile(
   file: File,
   tripId: string,
   userId: string,
   category: FileCategory,
-  description?: string
+  description: string,
+  imageUrl: string
 ): Promise<TripFile | null> {
+  // Server-side-ish validation (runs in the browser before DB insert)
+  if (!description || description.trim().length === 0) {
+    console.error("Upload blocked: description is required");
+    return null;
+  }
+  if (!imageUrl || imageUrl.trim().length === 0) {
+    console.error("Upload blocked: image_url is required");
+    return null;
+  }
+
   const supabase = createClient();
 
   // Generate unique filename
@@ -77,7 +118,8 @@ export async function uploadTripFile(
       file_url: urlData.publicUrl,
       file_size: file.size,
       category,
-      description: description || null,
+      description: description.trim(),
+      image_url: imageUrl,
     })
     .select()
     .single();
