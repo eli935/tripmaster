@@ -23,7 +23,7 @@ stage-<N>_v<X.Y>_<YYYY-MM-DD>_<HH-MM>.md
 | 5 | database + ui-designer | ✅ הושלם | 2026-04-17 | 15:18 | [stage-5_v1.0_2026-04-17_15-18.md](stage-5_v1.0_2026-04-17_15-18.md) |
 | 6 | ui-designer | ✅ הושלם | 2026-04-17 | 15:04 | [stage-6_v1.0_2026-04-17_15-04.md](stage-6_v1.0_2026-04-17_15-04.md) |
 | 7 | database + destinations | ✅ הושלם | 2026-04-17 | 15:25 | [stage-7_v1.0_2026-04-17_15-25.md](stage-7_v1.0_2026-04-17_15-25.md) |
-| 8 | recommendations-expert (חדש) | ⏸️ ממתין | — | — | — |
+| 8 | recommendations-expert (חדש) | ✅ הושלם | 2026-04-17 | 15:30 | [stage-8_v1.0_2026-04-17_15-30.md](stage-8_v1.0_2026-04-17_15-30.md) |
 | 9 (אחרון) | coordinator + user | ⏸️ ממתין | — | — | הרשמה לתוכניות affiliate (Booking/Airbnb/Rentalcars) + הכנסת IDs ל-Vercel env |
 
 ## 📝 פורמט סטנדרטי לדוח

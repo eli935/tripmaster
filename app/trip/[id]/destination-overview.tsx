@@ -47,6 +47,19 @@ interface LocalCustomsHoliday {
   affects_trip: boolean;
 }
 
+interface Recommendation {
+  id: string;
+  destination: string;
+  source: "reddit" | "tripadvisor" | "facebook" | "blog" | "claude" | null;
+  source_url: string | null;
+  title: string | null;
+  quote: string | null;
+  sentiment: "positive" | "neutral" | "negative" | null;
+  popularity_score: number | null;
+  tags: string[] | null;
+  collected_at: string | null;
+}
+
 interface LocalCustoms {
   overview: string;
   special_holidays: LocalCustomsHoliday[];
@@ -87,6 +100,9 @@ export function DestinationOverview({
   const [geoCoords, setGeoCoords] = useState<{ lat: number; lng: number } | null>(null);
   // Geocoded coordinates for each Chabad house, keyed by address.
   const [chabadCoords, setChabadCoords] = useState<Record<string, { lat: number; lng: number }>>({});
+  // Stage 8 — "What's hot" recommendations from trip_recommendations.
+  const [recommendations, setRecommendations] = useState<Recommendation[] | null>(null);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
 
   const isDomestic = trip?.location_type === "domestic";
   const accLat = trip?.accommodation_lat ?? null;
@@ -261,6 +277,37 @@ export function DestinationOverview({
       cancelled = true;
     };
   }, [hasAccommodation, destination.chabad, chabadCoords]);
+
+  // Stage 8 — Fetch "What's Hot" recommendations (international only).
+  useEffect(() => {
+    if (isDomestic) {
+      setRecommendations(null);
+      return;
+    }
+    const dest = trip?.destination || destination.country || destination.name;
+    if (!dest) return;
+    let cancelled = false;
+    setRecommendationsLoading(true);
+    fetch(
+      `/api/recommendations/for-destination?destination=${encodeURIComponent(dest)}`
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        setRecommendations(
+          Array.isArray(data?.items) ? (data.items as Recommendation[]) : []
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setRecommendations([]);
+      })
+      .finally(() => {
+        if (!cancelled) setRecommendationsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isDomestic, trip?.destination, destination.country, destination.name]);
 
   // Filter attractions client-side based on tags/keywords/fields.
   const filteredAttractions = useMemo(() => {
@@ -1467,6 +1514,117 @@ function FlightLine({
       </div>
       {datetime && <div className="text-muted-foreground mt-0.5">{datetime}</div>}
     </div>
+  );
+}
+
+function WhatsHotCard({
+  items,
+  loading,
+}: {
+  items: Recommendation[] | null;
+  loading: boolean;
+}) {
+  if (loading && !items) {
+    return (
+      <div className="rounded-2xl glass p-4 animate-pulse">
+        <div className="h-4 w-40 bg-white/10 rounded mb-3" />
+        <div className="flex gap-2">
+          <div className="h-28 w-64 bg-white/5 rounded-xl shrink-0" />
+          <div className="h-28 w-64 bg-white/5 rounded-xl shrink-0" />
+        </div>
+      </div>
+    );
+  }
+
+  const list = items ?? [];
+  const top = list.slice(0, 5);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.17 }}
+      className="rounded-2xl glass p-5"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-bold flex items-center gap-2">
+          <span className="text-lg">🔥</span> מה חם עכשיו
+        </h3>
+        {top.length > 0 && (
+          <Badge variant="secondary" className="text-[10px]">
+            {top.length} המלצות טריות
+          </Badge>
+        )}
+      </div>
+
+      {top.length === 0 ? (
+        <div className="text-sm text-muted-foreground py-6 text-center">
+          איסוף המלצות מתבצע ברקע — נחזור אליך בהקדם
+        </div>
+      ) : (
+        <div className="flex gap-3 overflow-x-auto pb-2 scroll-smooth">
+          {top.map((rec) => {
+            const score = rec.popularity_score ?? 0;
+            const badgeCls =
+              score >= 80
+                ? "bg-red-500/20 text-red-300 border-red-500/40"
+                : score >= 60
+                ? "bg-orange-500/20 text-orange-300 border-orange-500/40"
+                : "bg-white/10 text-muted-foreground border-white/10";
+            const quote =
+              rec.quote && rec.quote.length > 140
+                ? rec.quote.slice(0, 140) + "…"
+                : rec.quote || "";
+            return (
+              <div
+                key={rec.id}
+                className="shrink-0 w-64 rounded-2xl bg-white/5 border border-white/10 p-4 flex flex-col gap-2"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="font-semibold text-sm leading-snug flex-1">
+                    {rec.title || "המלצה"}
+                  </div>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full border ${badgeCls}`}
+                  >
+                    🔥 {score}
+                  </span>
+                </div>
+                {quote && (
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+                    &ldquo;{quote}&rdquo;
+                  </p>
+                )}
+                {rec.tags && rec.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {rec.tags.slice(0, 3).map((t, i) => (
+                      <Badge
+                        key={i}
+                        variant="secondary"
+                        className="text-[10px]"
+                      >
+                        {t}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                {rec.source_url && (
+                  <a
+                    href={rec.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-auto inline-flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    {rec.source || "מקור"}
+                  </a>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </motion.div>
   );
 }
 
