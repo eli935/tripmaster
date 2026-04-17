@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -67,6 +67,7 @@ import { BalanceDashboard } from "./balance-dashboard";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { EXPENSE_CATEGORIES, UNKNOWN_NAME } from "@/lib/i18n-labels";
 import { MoreHorizontal } from "lucide-react";
+import { MagneticButton } from "@/components/magnetic-button";
 import { DeleteButton } from "./delete-button";
 import type { TripPermission } from "@/lib/permissions";
 import type { ExpensePayer } from "@/lib/types-v8";
@@ -330,6 +331,14 @@ function CommandDeck({
   const primaryTabs = tabs.filter((t) => PRIMARY_TAB_IDS.has(t.id));
   const overflowTabs = tabs.filter((t) => !PRIMARY_TAB_IDS.has(t.id));
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 120);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const activeInOverflow = overflowTabs.some((t) => t.id === activeTab);
   const activeOverflowTab = tabs.find(
@@ -337,7 +346,14 @@ function CommandDeck({
   );
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
+    <div
+      className={`sticky top-0 z-30 -mx-4 px-4 py-2 transition-all duration-300 ${
+        scrolled
+          ? "bg-background/85 backdrop-blur-xl border-b border-[var(--gold-500)]/25 shadow-[0_6px_20px_-12px_rgba(0,0,0,0.8)]"
+          : "bg-transparent border-b border-transparent"
+      }`}
+    >
+      <div className="flex items-center gap-2 overflow-x-auto scrollbar-thin max-w-5xl mx-auto">
       {primaryTabs.map((tab) => (
         <TabPill
           key={tab.id}
@@ -404,6 +420,7 @@ function CommandDeck({
           </PopoverContent>
         </Popover>
       )}
+      </div>
     </div>
   );
 }
@@ -884,14 +901,13 @@ function ExpensesTab({
       {/* Add Expense */}
       <div className="flex justify-between items-center">
         <h2 className="font-semibold">הוצאות</h2>
-        <Button
-          size="sm"
+        <MagneticButton
           onClick={() => setAddOpen(true)}
-          className="rounded-full gradient-blue border-0"
+          className="inline-flex items-center gap-1.5 rounded-full gradient-gold text-white px-5 py-2 text-sm font-medium shadow-[0_4px_20px_-6px_rgba(212,169,96,0.6)] hover:brightness-110 transition"
         >
-          <Plus className="ml-1 h-4 w-4" />
+          <Plus className="h-4 w-4" />
           הוספת הוצאה
-        </Button>
+        </MagneticButton>
         <ExpenseDialog
           open={addOpen}
           onOpenChange={setAddOpen}
@@ -904,27 +920,37 @@ function ExpensesTab({
       </div>
 
       {/* Expense List */}
-      {expenses.map((exp) => (
-        <div key={exp.id} className="flex items-center justify-between p-3 bg-card rounded-lg border">
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium">{exp.description}</div>
-            <div className="text-xs text-muted-foreground">
-              {(exp as any).payer?.full_name || profileNames[exp.paid_by] || UNKNOWN_NAME} · {EXPENSE_CATEGORIES[exp.category as ExpenseCategory] || "אחר"}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="text-left">
-              <div className="font-semibold text-sm">{formatCurrency(Number(exp.amount), exp.currency || "ILS")}</div>
+      {expenses.map((exp) => {
+        // Gold shimmer sweep on items created in the last 4 seconds
+        const ageMs = Date.now() - new Date(exp.created_at).getTime();
+        const isFresh = ageMs < 4000;
+        return (
+          <div
+            key={exp.id}
+            className={`flex items-center justify-between p-3 bg-card rounded-lg border border-white/5 ${
+              isFresh ? "animate-gold-shimmer" : ""
+            }`}
+          >
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium font-serif">{exp.description}</div>
               <div className="text-xs text-muted-foreground">
-                {new Date(exp.created_at).toLocaleDateString("he-IL")}
+                {(exp as any).payer?.full_name || profileNames[exp.paid_by] || UNKNOWN_NAME} · {EXPENSE_CATEGORIES[exp.category as ExpenseCategory] || "אחר"}
               </div>
             </div>
-            {(isAdmin || exp.paid_by === userId) && (
-              <DeleteButton table="expenses" recordId={exp.id} tripId={tripId} userId={userId} isAdmin={isAdmin} />
-            )}
+            <div className="flex items-center gap-2">
+              <div className="text-left">
+                <div className="font-semibold text-sm tabular-nums font-display">{formatCurrency(Number(exp.amount), exp.currency || "ILS")}</div>
+                <div className="text-xs text-muted-foreground">
+                  {new Date(exp.created_at).toLocaleDateString("he-IL")}
+                </div>
+              </div>
+              {(isAdmin || exp.paid_by === userId) && (
+                <DeleteButton table="expenses" recordId={exp.id} tripId={tripId} userId={userId} isAdmin={isAdmin} />
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {expenses.length === 0 && (
         <p className="text-center text-muted-foreground py-8">
