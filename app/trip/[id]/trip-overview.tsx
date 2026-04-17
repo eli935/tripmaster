@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -84,7 +84,7 @@ import {
   minimizeTransfers,
   formatCurrency,
 } from "@/lib/expense-calculator";
-import { generateShoppingList } from "@/lib/shopping-generator";
+import { generateShoppingList, formatShoppingQuantity } from "@/lib/shopping-generator";
 
 interface TripOverviewProps {
   trip: Trip;
@@ -251,7 +251,7 @@ export function TripOverview({
             />
           )}
           {activeTab === "shopping" && (
-            <ShoppingTab shopping={shopping} tripId={trip.id} mealItems={mealItems} totalPeople={totalPeople} />
+            <ShoppingTab shopping={shopping} tripId={trip.id} mealItems={mealItems} meals={meals} totalPeople={totalPeople} />
           )}
           {activeTab === "expenses" && (
             <ExpensesTab
@@ -694,50 +694,43 @@ function ShoppingTab({
   shopping,
   tripId,
   mealItems,
+  meals,
   totalPeople,
 }: {
   shopping: ShoppingItem[];
   tripId: string;
   mealItems: MealItem[];
+  meals: Meal[];
   totalPeople: number;
 }) {
   const supabase = createClient();
   const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
-  const [generating, setGenerating] = useState(false);
   const [ingredient, setIngredient] = useState("");
   const [qty, setQty] = useState("1");
   const [unit, setUnit] = useState("יח׳");
 
-  async function generateFromMeals() {
-    if (mealItems.length === 0) {
-      toast.error("אין מרכיבים בארוחות. הוסף מרכיבים לארוחות קודם.");
-      return;
-    }
-    setGenerating(true);
-    const items = generateShoppingList(mealItems, totalPeople);
-
-    // Delete existing auto-generated items (keep manually added)
-    // Insert new ones
-    const { error } = await supabase.from("shopping_items").insert(
-      items.map((item) => ({
-        trip_id: tripId,
-        ingredient: item.ingredient,
-        total_quantity: Math.round(item.total_quantity * 10) / 10,
-        unit: item.unit,
-        category: item.category,
-        is_purchased: false,
-      }))
-    );
-
-    if (error) {
-      toast.error("שגיאה ביצירת רשימה");
-    } else {
-      toast.success(`נוצרו ${items.length} פריטים מהארוחות!`);
-    }
-    setGenerating(false);
-    router.refresh();
-  }
+  // Aggregated view of meal-derived items (always in sync, client-side)
+  const aggregated = useMemo(
+    () => generateShoppingList(mealItems, totalPeople, meals),
+    [mealItems, totalPeople, meals]
+  );
+  const aggregatedKeys = useMemo(
+    () =>
+      new Set(aggregated.map((a) => `${a.ingredient.trim().toLowerCase()}|${a.unit}`)),
+    [aggregated]
+  );
+  // Manually added items are those in `shopping` table not matching any aggregated key.
+  const manualShopping = shopping.filter(
+    (s) => !aggregatedKeys.has(`${s.ingredient.trim().toLowerCase()}|${s.unit}`)
+  );
+  // Purchased state — merge from shopping table by key
+  const purchasedMap = new Map(
+    shopping.map((s) => [
+      `${s.ingredient.trim().toLowerCase()}|${s.unit}`,
+      s,
+    ])
+  );
 
   async function addItem(e: React.FormEvent) {
     e.preventDefault();
@@ -754,7 +747,34 @@ function ShoppingTab({
     toast.success("פריט נוסף!");
   }
 
-  async function togglePurchased(item: ShoppingItem) {
+  async function toggleAggregatedPurchased(
+    key: string,
+    ingredient: string,
+    unitVal: string,
+    category: string,
+    totalQty: number
+  ) {
+    const existing = purchasedMap.get(key);
+    if (existing) {
+      await supabase
+        .from("shopping_items")
+        .update({ is_purchased: !existing.is_purchased })
+        .eq("id", existing.id);
+    } else {
+      // create as already-purchased
+      await supabase.from("shopping_items").insert({
+        trip_id: tripId,
+        ingredient,
+        total_quantity: Math.round(totalQty * 10) / 10,
+        unit: unitVal,
+        category,
+        is_purchased: true,
+      });
+    }
+    router.refresh();
+  }
+
+  async function toggleManualPurchased(item: ShoppingItem) {
     await supabase
       .from("shopping_items")
       .update({ is_purchased: !item.is_purchased })
@@ -762,26 +782,41 @@ function ShoppingTab({
     router.refresh();
   }
 
-  const purchased = shopping.filter((s) => s.is_purchased);
-  const remaining = shopping.filter((s) => !s.is_purchased);
+  const aggRows = aggregated.map((a) => {
+    const key = `${a.ingredient.trim().toLowerCase()}|${a.unit}`;
+    const linked = purchasedMap.get(key);
+    const fmt = formatShoppingQuantity(a.total_quantity, a.unit);
+    return {
+      key,
+      ingredient: a.ingredient,
+      unit: a.unit,
+      category: a.category,
+      total: a.total_quantity,
+      displayed: fmt.displayed,
+      raw: fmt.raw,
+      bumped: fmt.bumped,
+      meal_count: a.meal_count,
+      is_purchased: linked?.is_purchased ?? false,
+    };
+  });
+
+  const aggRemaining = aggRows.filter((r) => !r.is_purchased);
+  const aggPurchased = aggRows.filter((r) => r.is_purchased);
+  const manualRemaining = manualShopping.filter((s) => !s.is_purchased);
+  const manualPurchased = manualShopping.filter((s) => s.is_purchased);
+  const totalRemaining = aggRemaining.length + manualRemaining.length;
+  const isEmpty = aggRows.length === 0 && manualShopping.length === 0;
 
   return (
     <div className="space-y-3">
-      {/* Generate from meals */}
-      <Button
-        variant="outline"
-        size="sm"
-        className="w-full"
-        onClick={generateFromMeals}
-        disabled={generating}
-      >
-        {generating ? <Loader2 className="ml-1 h-4 w-4 animate-spin" /> : <Sparkles className="ml-1 h-4 w-4" />}
-        צור רשימה מהארוחות
-      </Button>
+      <p className="text-xs text-muted-foreground flex items-center gap-1">
+        <Sparkles className="h-3 w-3" />
+        הרשימה מתעדכנת אוטומטית מהארוחות
+      </p>
 
       <div className="flex justify-between items-center">
         <h2 className="font-semibold">
-          רשימת קניות ({remaining.length} נותרו)
+          רשימת קניות ({totalRemaining} נותרו)
         </h2>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger
@@ -812,32 +847,73 @@ function ShoppingTab({
         </Dialog>
       </div>
 
-      {remaining.map((item) => (
+      {aggRemaining.map((r) => (
         <div
-          key={item.id}
+          key={r.key}
           className="flex items-center gap-3 p-3 bg-card rounded-lg border cursor-pointer hover:bg-secondary"
-          onClick={() => togglePurchased(item)}
+          onClick={() =>
+            toggleAggregatedPurchased(r.key, r.ingredient, r.unit, r.category, r.total)
+          }
         >
           <Checkbox checked={false} />
           <div className="flex-1">
-            <div className="text-sm">{item.ingredient}</div>
+            <div className="text-sm">{r.ingredient}</div>
             <div className="text-xs text-muted-foreground">
-              {item.total_quantity} {item.unit}
+              {r.bumped ? (
+                <>
+                  {r.raw} {r.unit} → {r.displayed} {r.unit}
+                </>
+              ) : (
+                <>
+                  {r.displayed} {r.unit}
+                </>
+              )}{" "}
+              · מתוך {r.meal_count} ארוחות
             </div>
           </div>
         </div>
       ))}
 
-      {purchased.length > 0 && (
+      {manualRemaining.map((item) => (
+        <div
+          key={item.id}
+          className="flex items-center gap-3 p-3 bg-card rounded-lg border cursor-pointer hover:bg-secondary"
+          onClick={() => toggleManualPurchased(item)}
+        >
+          <Checkbox checked={false} />
+          <div className="flex-1">
+            <div className="text-sm">{item.ingredient}</div>
+            <div className="text-xs text-muted-foreground">
+              {item.total_quantity} {item.unit} · ידני
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {(aggPurchased.length > 0 || manualPurchased.length > 0) && (
         <>
           <h3 className="text-sm font-medium text-muted-foreground pt-2">
-            נקנו ({purchased.length})
+            נקנו ({aggPurchased.length + manualPurchased.length})
           </h3>
-          {purchased.map((item) => (
+          {aggPurchased.map((r) => (
+            <div
+              key={r.key}
+              className="flex items-center gap-3 p-3 bg-secondary rounded-lg border cursor-pointer opacity-60"
+              onClick={() =>
+                toggleAggregatedPurchased(r.key, r.ingredient, r.unit, r.category, r.total)
+              }
+            >
+              <Checkbox checked={true} />
+              <div className="flex-1 line-through">
+                <div className="text-sm">{r.ingredient}</div>
+              </div>
+            </div>
+          ))}
+          {manualPurchased.map((item) => (
             <div
               key={item.id}
               className="flex items-center gap-3 p-3 bg-secondary rounded-lg border cursor-pointer opacity-60"
-              onClick={() => togglePurchased(item)}
+              onClick={() => toggleManualPurchased(item)}
             >
               <Checkbox checked={true} />
               <div className="flex-1 line-through">
@@ -851,9 +927,9 @@ function ShoppingTab({
         </>
       )}
 
-      {shopping.length === 0 && (
+      {isEmpty && (
         <p className="text-center text-muted-foreground py-8">
-          רשימת הקניות ריקה
+          רשימת הקניות ריקה — הוסף ארוחות עם מרכיבים או פריטים ידניים
         </p>
       )}
     </div>

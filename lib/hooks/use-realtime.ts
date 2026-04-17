@@ -40,6 +40,11 @@ export function useRealtimeTrip(tripId: string) {
         { event: "*", schema: "public", table: "meals" },
         () => router.refresh()
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "meal_items" },
+        () => router.refresh()
+      )
       .subscribe();
 
     return () => {

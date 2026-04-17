@@ -102,7 +102,22 @@ export interface Meal {
   name: string;
   description: string | null;
   servings: number;
+  attendees_count?: number | null;
+  recipe_id?: string | null;
   items?: MealItem[];
+}
+
+export interface MealRecipe {
+  id: string;
+  name: string;
+  description: string | null;
+  ingredients: Array<{ name: string; quantity_per_person: number; unit: string }>;
+  instructions: string | null;
+  source: "ai" | "manual" | "library";
+  created_by: string | null;
+  trip_id: string | null;
+  content_hash: string | null;
+  created_at: string;
 }
 
 export interface MealItem {

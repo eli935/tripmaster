@@ -26,6 +26,8 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
+  Sparkles,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { TripDay, Meal, MealItem, DayType, MealType } from "@/lib/supabase/types";
@@ -65,6 +67,18 @@ export function MealPlanner({ days, meals, mealItems, tripId, totalPeople, zmani
   const [loading, setLoading] = useState(false);
   const [generatingAll, setGeneratingAll] = useState(false);
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
+  const [recipeLoading, setRecipeLoading] = useState<string | null>(null);
+  const [recipePreview, setRecipePreview] = useState<{
+    meal: Meal;
+    recipe: {
+      id: string;
+      name: string;
+      description: string | null;
+      instructions: string | null;
+      ingredients: Array<{ name: string; quantity_per_person: number; unit: string }>;
+    };
+  } | null>(null);
+  const [approving, setApproving] = useState(false);
 
   // Group meal items by meal
   const itemsByMeal: Record<string, MealItem[]> = {};
@@ -106,6 +120,89 @@ export function MealPlanner({ days, meals, mealItems, tripId, totalPeople, zmani
     await supabase.from("meals").delete().eq("id", mealId);
     router.refresh();
     toast.success("ארוחה נמחקה");
+  }
+
+  function getEffectiveAttendees(meal: Meal): number {
+    const raw = (meal as any).attendees_count;
+    if (raw == null || raw === "") return totalPeople;
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n <= 0) return totalPeople;
+    return n;
+  }
+
+  async function updateAttendees(mealId: string, value: string) {
+    const n = value === "" ? null : Number(value);
+    await supabase
+      .from("meals")
+      .update({ attendees_count: n && n > 0 ? n : null })
+      .eq("id", mealId);
+    router.refresh();
+  }
+
+  async function generateRecipe(meal: Meal) {
+    const description = (meal.description || meal.name || "").trim();
+    if (!description) {
+      toast.error("אין תיאור לארוחה — הוסף תיאור או שם");
+      return;
+    }
+    setRecipeLoading(meal.id);
+    try {
+      const res = await fetch("/api/meals/generate-recipe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mealDescription: description,
+          attendeesCount: getEffectiveAttendees(meal),
+          tripId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data?.error || "שגיאה ביצירת מתכון");
+        return;
+      }
+      setRecipePreview({ meal, recipe: data.recipe });
+    } catch (e) {
+      toast.error("שגיאה ברשת");
+    } finally {
+      setRecipeLoading(null);
+    }
+  }
+
+  async function approveRecipe() {
+    if (!recipePreview) return;
+    const { meal, recipe } = recipePreview;
+    setApproving(true);
+    try {
+      const attendees = getEffectiveAttendees(meal);
+      // 1) Link recipe to the meal
+      await supabase
+        .from("meals")
+        .update({ recipe_id: recipe.id })
+        .eq("id", meal.id);
+
+      // 2) Delete existing meal_items for this meal, then insert recipe ingredients
+      await supabase.from("meal_items").delete().eq("meal_id", meal.id);
+
+      const toInsert = (recipe.ingredients || []).map((ing) => ({
+        meal_id: meal.id,
+        ingredient: ing.name,
+        quantity: Number(ing.quantity_per_person) || 0,
+        unit: ing.unit || "יח׳",
+        category: "other" as const,
+      }));
+      if (toInsert.length > 0) {
+        await supabase.from("meal_items").insert(toInsert);
+      }
+
+      toast.success(`המתכון "${recipe.name}" נוסף לארוחה ולקניות (${attendees} סועדים)`);
+      setRecipePreview(null);
+      router.refresh();
+    } catch (e) {
+      toast.error("שגיאה בשמירת המתכון");
+    } finally {
+      setApproving(false);
+    }
   }
 
   async function generateAllMeals() {
@@ -220,34 +317,90 @@ export function MealPlanner({ days, meals, mealItems, tripId, totalPeople, zmani
                 ) : (
                   dayMeals.map((meal) => {
                     const mealItemCount = (itemsByMeal[meal.id] || []).length;
+                    const effAttendees = getEffectiveAttendees(meal);
+                    const hasOverride = (meal as any).attendees_count != null;
+                    const hasDesc = !!(meal.description && meal.description.trim());
+                    const isGenerating = recipeLoading === meal.id;
                     return (
                     <div
                       key={meal.id}
-                      className="flex items-center justify-between p-2 bg-secondary rounded-md cursor-pointer hover:bg-accent transition-colors"
-                      onClick={() => setEditingMeal(meal)}
+                      className="p-2 bg-secondary rounded-md hover:bg-accent transition-colors"
                     >
-                      <div className="flex items-center gap-2">
-                        {MEAL_ICONS[meal.meal_type] || <Utensils className="h-3 w-3" />}
-                        <div>
-                          <div className="text-sm font-medium">{meal.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {mealItemCount > 0 ? `${mealItemCount} מרכיבים` : "לחץ להוספת מרכיבים"}
-                            {meal.description && ` · ${meal.description}`}
+                      <div
+                        className="flex items-center justify-between cursor-pointer"
+                        onClick={() => setEditingMeal(meal)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {MEAL_ICONS[meal.meal_type] || <Utensils className="h-3 w-3" />}
+                          <div>
+                            <div className="text-sm font-medium flex items-center gap-2">
+                              {meal.name}
+                              {(meal as any).recipe_id && (
+                                <Badge variant="outline" className="text-[10px] h-4 px-1">
+                                  <Sparkles className="h-2.5 w-2.5 ml-0.5" />
+                                  מתכון
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {mealItemCount > 0 ? `${mealItemCount} מרכיבים` : "לחץ להוספת מרכיבים"}
+                              {meal.description && ` · ${meal.description}`}
+                            </div>
                           </div>
                         </div>
+                        <div className="flex items-center gap-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {meal.servings} מנות
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-red-400 hover:text-red-400"
+                            onClick={(e) => { e.stopPropagation(); deleteMeal(meal.id); }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {meal.servings} מנות
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-red-400 hover:text-red-400"
-                          onClick={(e) => { e.stopPropagation(); deleteMeal(meal.id); }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                      <div
+                        className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-border/60"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3 w-3 text-muted-foreground" />
+                          <Input
+                            type="number"
+                            min="1"
+                            value={(meal as any).attendees_count ?? ""}
+                            placeholder={String(totalPeople)}
+                            onChange={(e) => updateAttendees(meal.id, e.target.value)}
+                            className="h-6 w-14 text-xs"
+                            dir="ltr"
+                          />
+                          {hasOverride && (
+                            <Badge variant="outline" className="text-[10px] h-4 px-1">
+                              {effAttendees} מתוך {totalPeople} אוכלים
+                            </Badge>
+                          )}
+                        </div>
+                        {hasDesc && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 text-xs px-2"
+                            disabled={isGenerating}
+                            onClick={() => generateRecipe(meal)}
+                          >
+                            {isGenerating ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <>
+                                <Sparkles className="h-3 w-3 ml-1" />
+                                הצע מתכון
+                              </>
+                            )}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   );})
@@ -338,9 +491,101 @@ export function MealPlanner({ days, meals, mealItems, tripId, totalPeople, zmani
         <MealIngredients
           meal={editingMeal}
           items={itemsByMeal[editingMeal.id] || []}
-          totalPeople={totalPeople}
+          totalPeople={getEffectiveAttendees(editingMeal)}
           onClose={() => setEditingMeal(null)}
         />
+      )}
+
+      {/* Recipe Preview Dialog */}
+      {recipePreview && (
+        <Dialog open={true} onOpenChange={(open) => !open && setRecipePreview(null)}>
+          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5" />
+                {recipePreview.recipe.name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {recipePreview.recipe.description && (
+                <p className="text-sm text-muted-foreground">
+                  {recipePreview.recipe.description}
+                </p>
+              )}
+
+              {recipePreview.recipe.instructions && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">הוראות הכנה</h4>
+                  <ol className="list-decimal pr-5 space-y-1 text-sm">
+                    {recipePreview.recipe.instructions
+                      .split(/\n|\d+\.\s+/)
+                      .map((s) => s.trim())
+                      .filter(Boolean)
+                      .map((step, i) => (
+                        <li key={i}>{step}</li>
+                      ))}
+                  </ol>
+                </div>
+              )}
+
+              <div>
+                <h4 className="text-sm font-semibold mb-2">
+                  מרכיבים · {getEffectiveAttendees(recipePreview.meal)} סועדים
+                </h4>
+                <div className="border rounded-md overflow-hidden">
+                  <table className="w-full text-xs">
+                    <thead className="bg-secondary">
+                      <tr>
+                        <th className="p-2 text-right font-medium">מרכיב</th>
+                        <th className="p-2 text-right font-medium">לנפש</th>
+                        <th className="p-2 text-right font-medium">סה"כ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(recipePreview.recipe.ingredients || []).map((ing, i) => {
+                        const attendees = getEffectiveAttendees(recipePreview.meal);
+                        const total = Number(ing.quantity_per_person || 0) * attendees;
+                        const rounded = Math.round(total * 10) / 10;
+                        return (
+                          <tr key={i} className="border-t">
+                            <td className="p-2">{ing.name}</td>
+                            <td className="p-2">
+                              {ing.quantity_per_person} {ing.unit}
+                            </td>
+                            <td className="p-2 font-medium">
+                              {rounded} {ing.unit}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1"
+                  onClick={approveRecipe}
+                  disabled={approving}
+                >
+                  {approving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "אשר והוסף לקניות"
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setRecipePreview(null)}
+                  disabled={approving}
+                >
+                  בטל
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
