@@ -92,7 +92,12 @@ export function FileManager({ files, tripId, userId }: FileManagerProps) {
             <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
               <Select value={category} onValueChange={(v) => v && setCategory(v as FileCategory)}>
                 <SelectTrigger className="h-9 text-sm">
-                  <SelectValue />
+                  <SelectValue>
+                    {(v: unknown) => {
+                      const info = FILE_CATEGORIES[v as FileCategory];
+                      return info ? `${info.emoji} ${info.label}` : "אחר";
+                    }}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(FILE_CATEGORIES).map(([key, val]) => (

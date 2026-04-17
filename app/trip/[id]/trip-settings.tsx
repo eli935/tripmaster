@@ -153,7 +153,12 @@ export function TripSettings({ trip, participants, userId, isAdmin }: TripSettin
                 <Label>סטטוס</Label>
                 <Select value={status} onValueChange={(v) => setStatus(v as TripStatus)}>
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue>
+                      {(v: unknown) => {
+                        const opt = STATUS_OPTIONS.find((o) => o.value === v);
+                        return opt ? opt.label : "בתכנון";
+                      }}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {STATUS_OPTIONS.map((opt) => (

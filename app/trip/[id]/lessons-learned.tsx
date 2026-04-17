@@ -119,7 +119,12 @@ export function LessonsLearnedTab({ lessons, tripId, userId }: LessonsLearnedPro
                   <Label className="text-xs">קטגוריה</Label>
                   <Select value={category} onValueChange={(v) => v && setCategory(v)}>
                     <SelectTrigger className="h-9">
-                      <SelectValue />
+                      <SelectValue>
+                        {(v: unknown) => {
+                          const c = CATEGORIES.find((x) => x.value === v);
+                          return c ? `${c.emoji} ${c.label}` : "כללי";
+                        }}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {CATEGORIES.map((c) => (
@@ -134,7 +139,12 @@ export function LessonsLearnedTab({ lessons, tripId, userId }: LessonsLearnedPro
                   <Label className="text-xs">פעולה</Label>
                   <Select value={action} onValueChange={(v) => v && setAction(v)}>
                     <SelectTrigger className="h-9">
-                      <SelectValue />
+                      <SelectValue>
+                        {(v: unknown) => {
+                          const a = ACTIONS.find((x) => x.value === v);
+                          return a ? a.label : "הערה";
+                        }}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {ACTIONS.map((a) => (

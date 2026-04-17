@@ -18,14 +18,38 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   )
 }
 
-function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
+/**
+ * SelectValue renders the label of the currently selected item.
+ *
+ * base-ui's Select.Value displays the raw `value` by default (which would
+ * leak English DB keys or UUIDs to Hebrew users). We default to a
+ * `placeholder` rendering. Consumers who want label display must pass a
+ * `children` render function: `<SelectValue>{(v) => LABELS[v] ?? v}</SelectValue>`.
+ */
+function SelectValue({
+  className,
+  placeholder,
+  children,
+  ...props
+}: SelectPrimitive.Value.Props & { placeholder?: string }) {
+  // If no children function was provided, show placeholder when empty
+  // and hide the raw value (prevents English/UUID leaks).
+  const render = children ?? ((value: unknown) => {
+    if (value === null || value === undefined || value === "") {
+      return <span className="text-muted-foreground">{placeholder ?? ""}</span>;
+    }
+    // By default, show the value — callers should override via children for i18n.
+    return String(value);
+  });
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
       className={cn("flex flex-1 text-left", className)}
       {...props}
-    />
-  )
+    >
+      {render as any}
+    </SelectPrimitive.Value>
+  );
 }
 
 function SelectTrigger({

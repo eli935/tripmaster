@@ -137,7 +137,12 @@ export function PermissionsManager({ tripId, participants, permissions }: Permis
                           onValueChange={(v) => v && updateRole(p.id, p.profile_id, v as Role)}
                         >
                           <SelectTrigger className="h-10">
-                            <SelectValue />
+                            <SelectValue>
+                              {(v: unknown) => {
+                                const info = ROLE_LABELS[v as Role];
+                                return info ? `${info.emoji} ${info.label}` : "משתתף";
+                              }}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {Object.entries(ROLE_LABELS).map(([key, val]) => (

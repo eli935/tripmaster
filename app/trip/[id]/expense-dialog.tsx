@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import type { TripParticipant, ExpenseCategory, SplitType } from "@/lib/supabase/types";
 import { formatCurrency } from "@/lib/expense-calculator";
 import { getExchangeRate } from "@/lib/currency";
-import { EXPENSE_CATEGORIES, SPLIT_TYPES } from "@/lib/i18n-labels";
+import { EXPENSE_CATEGORIES, SPLIT_TYPES, CURRENCY_LABELS, UNKNOWN_NAME } from "@/lib/i18n-labels";
 
 // EXPENSE_CATEGORIES now imported from @/lib/i18n-labels
 
@@ -213,7 +213,9 @@ export function ExpenseDialog({
               <Label>קטגוריה</Label>
               <Select value={category} onValueChange={(v) => v && setCategory(v as ExpenseCategory)}>
                 <SelectTrigger className="h-11">
-                  <SelectValue />
+                  <SelectValue>
+                    {(v: unknown) => EXPENSE_CATEGORIES[v as ExpenseCategory] ?? "אחר"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(EXPENSE_CATEGORIES).map(([k, v]) => (
@@ -226,7 +228,9 @@ export function ExpenseDialog({
               <Label>מטבע</Label>
               <Select value={currency} onValueChange={(v) => v && setCurrency(v as any)}>
                 <SelectTrigger className="h-11">
-                  <SelectValue />
+                  <SelectValue>
+                    {(v: unknown) => CURRENCY_LABELS[v as string] ?? "₪ שקל"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ILS">₪ שקל</SelectItem>
@@ -274,12 +278,17 @@ export function ExpenseDialog({
                         disabled={!isAdmin && payer.profile_id !== userId}
                       >
                         <SelectTrigger className="h-10 text-sm">
-                          <SelectValue />
+                          <SelectValue>
+                            {(v: unknown) => {
+                              const p = participants.find((pp) => pp.profile_id === v);
+                              return (p?.profile as any)?.full_name || UNKNOWN_NAME;
+                            }}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {participants.map((p) => (
                             <SelectItem key={p.profile_id} value={p.profile_id}>
-                              {(p.profile as any)?.full_name}
+                              {(p.profile as any)?.full_name || UNKNOWN_NAME}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -334,7 +343,9 @@ export function ExpenseDialog({
             <Label>חלוקה</Label>
             <Select value={splitType} onValueChange={(v) => v && setSplitType(v as SplitType)}>
               <SelectTrigger className="h-11">
-                <SelectValue />
+                <SelectValue>
+                  {(v: unknown) => SPLIT_TYPES[v as SplitType] ?? "חלוקה"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(SPLIT_TYPES).map(([k, v]) => (

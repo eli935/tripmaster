@@ -180,7 +180,14 @@ export function MealIngredients({ meal, items, onClose, totalPeople }: MealIngre
                   <Label className="text-xs">קטגוריה</Label>
                   <Select value={category} onValueChange={(v) => setCategory(v as FoodCategory)}>
                     <SelectTrigger className="h-8 text-sm">
-                      <SelectValue />
+                      <SelectValue>
+                        {(v: unknown) => {
+                          const k = v as FoodCategory;
+                          const label = CATEGORY_LABELS[k] ?? "אחר";
+                          const emoji = CATEGORY_EMOJI[k] ?? "📦";
+                          return `${emoji} ${label}`;
+                        }}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {Object.entries(CATEGORY_LABELS).map(([key, label]) => (

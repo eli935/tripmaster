@@ -142,3 +142,39 @@ export function hebrewLabel<T extends string>(
  * Replaces legacy "???" which looked like a bug to users.
  */
 export const UNKNOWN_NAME = "—";
+
+// ──────────────────────────────────────────────
+// Currency codes
+// ──────────────────────────────────────────────
+export const CURRENCY_LABELS: Record<string, string> = {
+  ILS: "₪ שקל",
+  EUR: "€ יורו",
+  USD: "$ דולר",
+  GBP: "£ ליש״ט",
+};
+
+// ──────────────────────────────────────────────
+// Holiday types
+// ──────────────────────────────────────────────
+export const HOLIDAY_LABELS: Record<string, string> = {
+  regular: "טיול רגיל",
+  pesach: "פסח",
+  sukkot: "סוכות",
+  rosh_hashana: "ראש השנה",
+  shavuot: "שבועות",
+};
+
+// ──────────────────────────────────────────────
+// File categories (for FileManager)
+// ──────────────────────────────────────────────
+// Note: FILE_CATEGORIES already exists in lib/file-upload.ts with richer shape.
+// We re-export a simplified label map here for Select display convenience.
+
+// ──────────────────────────────────────────────
+// Role labels
+// ──────────────────────────────────────────────
+export const ROLE_LABELS: Record<string, string> = {
+  admin: "מנהל",
+  member: "משתתף",
+  owner: "יוצר",
+};

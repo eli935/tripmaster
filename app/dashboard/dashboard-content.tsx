@@ -192,7 +192,9 @@ export function DashboardContent({ profile, trips, userId }: DashboardContentPro
                   onValueChange={(v) => setHolidayType(v as HolidayType)}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue>
+                      {(v: unknown) => HOLIDAY_LABELS[v as HolidayType] ?? "טיול רגיל"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="regular">טיול רגיל</SelectItem>
