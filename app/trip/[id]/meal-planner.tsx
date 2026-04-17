@@ -32,6 +32,7 @@ import type { TripDay, Meal, MealItem, DayType, MealType } from "@/lib/supabase/
 import { MealIngredients } from "./meal-ingredients";
 import { ZmanimCard } from "./zmanim-card";
 import { DAY_TYPE_LABELS, DAY_TYPE_COLORS, getDefaultMeals } from "@/lib/hebrew-calendar";
+import { MEAL_LABELS } from "@/lib/i18n-labels";
 
 const MEAL_ICONS: Record<string, React.ReactNode> = {
   breakfast: <Coffee className="h-3 w-3" />,
@@ -42,14 +43,7 @@ const MEAL_ICONS: Record<string, React.ReactNode> = {
   seuda_3: <Utensils className="h-3 w-3" />,
 };
 
-const MEAL_LABELS: Record<MealType, string> = {
-  breakfast: "ארוחת בוקר",
-  lunch: "ארוחת צהריים",
-  dinner: "ארוחת ערב",
-  seuda_1: "סעודה ראשונה",
-  seuda_2: "סעודה שנייה",
-  seuda_3: "סעודה שלישית",
-};
+// MEAL_LABELS imported from @/lib/i18n-labels
 
 interface MealPlannerProps {
   days: TripDay[];

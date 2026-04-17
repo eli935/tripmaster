@@ -67,7 +67,7 @@ export function TripSummary({
 
   const profileNames: Record<string, string> = {};
   participants.forEach((p) => {
-    profileNames[p.profile_id] = (p.profile as any)?.full_name || "???";
+    profileNames[p.profile_id] = (p.profile as any)?.full_name || "—";
   });
   const balances = calculateBalances(expenses, participants, profileNames);
   const transfers = minimizeTransfers(balances);

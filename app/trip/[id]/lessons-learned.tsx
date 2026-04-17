@@ -22,22 +22,29 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { LessonLearned } from "@/lib/supabase/types";
+import { LESSON_CATEGORIES, LESSON_ACTIONS } from "@/lib/i18n-labels";
 
-const CATEGORIES = [
-  { value: "equipment", label: "ציוד", emoji: "🎒" },
-  { value: "food", label: "אוכל", emoji: "🍽️" },
-  { value: "logistics", label: "לוגיסטיקה", emoji: "🚗" },
-  { value: "accommodation", label: "דירה/מלון", emoji: "🏠" },
-  { value: "general", label: "כללי", emoji: "💡" },
-];
+// Flattened for Select/UI — labels come from i18n-labels
+const CATEGORIES = Object.entries(LESSON_CATEGORIES).map(([value, v]) => ({
+  value,
+  label: v.label,
+  emoji: v.emoji,
+}));
 
-const ACTIONS = [
-  { value: "add", label: "להוסיף", icon: PackagePlus, color: "text-green-400" },
-  { value: "remove", label: "להוריד", icon: PackageMinus, color: "text-red-400" },
-  { value: "increase", label: "להגדיל כמות", icon: TrendingUp, color: "text-blue-400" },
-  { value: "decrease", label: "להקטין כמות", icon: TrendingDown, color: "text-orange-600" },
-  { value: "note", label: "הערה", icon: MessageSquare, color: "text-gray-600" },
-];
+const ACTION_ICONS: Record<string, { icon: any; color: string }> = {
+  add:      { icon: PackagePlus,   color: "text-green-400" },
+  remove:   { icon: PackageMinus,  color: "text-red-400" },
+  increase: { icon: TrendingUp,    color: "text-blue-400" },
+  decrease: { icon: TrendingDown,  color: "text-orange-600" },
+  note:     { icon: MessageSquare, color: "text-gray-600" },
+};
+
+const ACTIONS = Object.entries(LESSON_ACTIONS).map(([value, label]) => ({
+  value,
+  label,
+  icon: ACTION_ICONS[value]?.icon || MessageSquare,
+  color: ACTION_ICONS[value]?.color || "text-gray-600",
+}));
 
 interface LessonsLearnedProps {
   lessons: LessonLearned[];

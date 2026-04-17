@@ -8,8 +8,10 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-rubik), "Rubik", sans-serif;
+  --font-serif: var(--font-frank-ruhl), "Frank Ruhl Libre", "David", serif;
+  --font-display: var(--font-fraunces), "Fraunces", Georgia, serif;
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-serif);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -46,6 +48,28 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Jerusalem Gold — v8.7 signature palette */
+:root {
+  /* Gold scale — warm Jerusalem stone */
+  --gold-50: #FAF3E2;
+  --gold-100: #F7EBCE;
+  --gold-200: #F4E4BC;
+  --gold-300: #E9CE8F;
+  --gold-500: #D4A960;
+  --gold-600: #B8874A;
+  --gold-700: #8B6F3A;
+  --gold-900: #3D2E15;
+
+  /* Editorial semantic accents */
+  --sapphire: #1B3A6B;
+  --olive:    #5A6B3C;
+  --rose:     #8B2E3C;
+
+  /* Gradient tokens */
+  --gradient-gold-editorial: linear-gradient(135deg, #F4E4BC 0%, #D4A960 50%, #8B6F3A 100%);
+  --gradient-gold-soft:      linear-gradient(135deg, #FAF3E2 0%, #E9CE8F 100%);
 }
 
 /* Dark premium theme inspired by Jesko Jets */
@@ -142,7 +166,43 @@
     background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   }
   .gradient-gold {
-    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+    /* v8.7: editorial Jerusalem stone — replaces old pastel sunset */
+    background: var(--gradient-gold-editorial);
+  }
+  .gradient-gold-soft {
+    background: var(--gradient-gold-soft);
+  }
+  .font-display {
+    font-family: var(--font-fraunces), "Fraunces", Georgia, serif;
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+  }
+  .font-serif {
+    font-family: var(--font-frank-ruhl), "Frank Ruhl Libre", "David", serif;
+  }
+  .text-gold {
+    color: var(--gold-500);
+  }
+  .border-gold {
+    border-color: var(--gold-500);
+  }
+  /* Thin visible scrollbar for horizontal tab overflow */
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(212, 169, 96, 0.3);
+    border-radius: 3px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(212, 169, 96, 0.6);
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(212, 169, 96, 0.4) transparent;
   }
   .gradient-purple {
     background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);

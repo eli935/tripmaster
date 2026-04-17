@@ -21,16 +21,9 @@ import { toast } from "sonner";
 import type { TripParticipant, ExpenseCategory, SplitType } from "@/lib/supabase/types";
 import { formatCurrency } from "@/lib/expense-calculator";
 import { getExchangeRate } from "@/lib/currency";
+import { EXPENSE_CATEGORIES, SPLIT_TYPES } from "@/lib/i18n-labels";
 
-const EXPENSE_CATEGORIES: Record<ExpenseCategory, string> = {
-  flights: "טיסות ✈️",
-  accommodation: "דירה/מלון 🏨",
-  car: "רכב 🚗",
-  food: "אוכל 🍽️",
-  equipment: "ציוד 🎒",
-  attractions: "אטרקציות 🎡",
-  other: "אחר 📦",
-};
+// EXPENSE_CATEGORIES now imported from @/lib/i18n-labels
 
 interface Payer {
   profile_id: string;
@@ -90,7 +83,7 @@ export function ExpenseDialog({
       {
         profile_id: available.profile_id,
         amount: "",
-        name: (available.profile as any)?.full_name || "???",
+        name: (available.profile as any)?.full_name || "—",
       },
     ]);
   }
@@ -104,7 +97,7 @@ export function ExpenseDialog({
     updated[idx] = { ...updated[idx], [field]: value };
     if (field === "profile_id") {
       const p = participants.find((pp) => pp.profile_id === value);
-      updated[idx].name = (p?.profile as any)?.full_name || "???";
+      updated[idx].name = (p?.profile as any)?.full_name || "—";
     }
     setPayers(updated);
   }
@@ -344,10 +337,9 @@ export function ExpenseDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="per_person">👥 לפי נפשות (משותף)</SelectItem>
-                <SelectItem value="equal">⚖️ שווה בין משפחות</SelectItem>
-                <SelectItem value="custom">🎯 חלוקה מותאמת</SelectItem>
-                <SelectItem value="private">🔒 פרטי (לא לחלוקה)</SelectItem>
+                {Object.entries(SPLIT_TYPES).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

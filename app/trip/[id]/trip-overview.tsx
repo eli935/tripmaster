@@ -64,6 +64,9 @@ import { AdminPanel } from "./admin-panel";
 import { TripChat } from "./trip-chat";
 import { ExpenseDialog } from "./expense-dialog";
 import { BalanceDashboard } from "./balance-dashboard";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { EXPENSE_CATEGORIES, UNKNOWN_NAME } from "@/lib/i18n-labels";
+import { MoreHorizontal } from "lucide-react";
 import { DeleteButton } from "./delete-button";
 import type { TripPermission } from "@/lib/permissions";
 import type { ExpensePayer } from "@/lib/types-v8";
@@ -81,16 +84,6 @@ import {
   formatCurrency,
 } from "@/lib/expense-calculator";
 import { generateShoppingList } from "@/lib/shopping-generator";
-
-const EXPENSE_CATEGORIES: Record<ExpenseCategory, string> = {
-  flights: "טיסות",
-  accommodation: "דירה/מלון",
-  car: "רכב",
-  food: "אוכל",
-  equipment: "ציוד",
-  attractions: "אטרקציות",
-  other: "אחר",
-};
 
 interface TripOverviewProps {
   trip: Trip;
@@ -113,6 +106,15 @@ interface TripOverviewProps {
 }
 
 type Tab = "destination" | "overview" | "chat" | "meals" | "equipment" | "shopping" | "expenses" | "files" | "lessons" | "summary" | "admin" | "settings";
+
+// Which tabs appear in the primary row (always visible). Rest go into "עוד" popover.
+const PRIMARY_TAB_IDS: ReadonlySet<Tab> = new Set<Tab>([
+  "destination",
+  "overview",
+  "chat",
+  "meals",
+  "expenses",
+]);
 
 export function TripOverview({
   trip,
@@ -187,7 +189,7 @@ export function TripOverview({
           <ArrowRight className="ml-1 h-4 w-4" />
           חזרה
         </Button>
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{trip.name}</h1>
+        <h1 className="font-serif text-4xl md:text-5xl font-bold tracking-tight leading-[1.1]">{trip.name}</h1>
         <p className="text-muted-foreground mt-1">
           {trip.destination} · {totalPeople} נפשות · {participants.length} משפחות
         </p>
@@ -198,31 +200,12 @@ export function TripOverview({
         <HolidayBanner holidayType={trip.holiday_type as any} />
       )}
 
-      {/* Tab Navigation — Premium */}
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {tabs.map((tab) => (
-          <motion.button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            whileTap={{ scale: 0.95 }}
-            whileHover={{ scale: 1.03 }}
-            transition={{ type: "spring", stiffness: 400, damping: 20 }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors duration-300 ${
-              activeTab === tab.id
-                ? "gradient-blue text-white shadow-lg shadow-blue-500/25"
-                : "text-muted-foreground hover:text-foreground glass glass-hover"
-            }`}
-          >
-            <tab.icon className="ml-1 h-4 w-4" />
-            {tab.label}
-            {tab.count > 0 && (
-              <span className={`mr-1 text-xs ${activeTab === tab.id ? "text-white/80" : "text-muted-foreground"}`}>
-                {tab.count}
-              </span>
-            )}
-          </motion.button>
-        ))}
-      </div>
+      {/* Command Deck — primary row + "עוד" popover */}
+      <CommandDeck
+        tabs={tabs}
+        activeTab={activeTab}
+        onSelect={setActiveTab}
+      />
 
       {/* Tab Content with smooth transitions */}
       <AnimatePresence mode="wait">
@@ -331,6 +314,140 @@ export function TripOverview({
         </motion.div>
       </AnimatePresence>
     </div>
+  );
+}
+
+/* ========= COMMAND DECK TAB NAVIGATION ========= */
+function CommandDeck({
+  tabs,
+  activeTab,
+  onSelect,
+}: {
+  tabs: { id: Tab; label: string; icon: any; count: number }[];
+  activeTab: Tab;
+  onSelect: (t: Tab) => void;
+}) {
+  const primaryTabs = tabs.filter((t) => PRIMARY_TAB_IDS.has(t.id));
+  const overflowTabs = tabs.filter((t) => !PRIMARY_TAB_IDS.has(t.id));
+  const [open, setOpen] = useState(false);
+
+  const activeInOverflow = overflowTabs.some((t) => t.id === activeTab);
+  const activeOverflowTab = tabs.find(
+    (t) => t.id === activeTab && !PRIMARY_TAB_IDS.has(t.id)
+  );
+
+  return (
+    <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
+      {primaryTabs.map((tab) => (
+        <TabPill
+          key={tab.id}
+          tab={tab}
+          active={activeTab === tab.id}
+          onClick={() => onSelect(tab.id)}
+        />
+      ))}
+
+      {overflowTabs.length > 0 && (
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger
+            render={
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 400, damping: 24 }}
+                className={`relative flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shrink-0 transition-colors ${
+                  activeInOverflow
+                    ? "bg-[var(--gold-500)]/20 text-[var(--gold-200)] border border-[var(--gold-500)]/40"
+                    : "text-muted-foreground hover:text-foreground glass glass-hover"
+                }`}
+              >
+                <MoreHorizontal className="ml-1 h-4 w-4" />
+                {activeInOverflow && activeOverflowTab
+                  ? activeOverflowTab.label
+                  : "עוד"}
+                <span className="mr-1 text-xs opacity-70">
+                  {overflowTabs.length}
+                </span>
+              </motion.button>
+            }
+          />
+          <PopoverContent align="end" className="w-64 p-1.5">
+            <div className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+              תפריט מלא
+            </div>
+            <div className="flex flex-col gap-0.5">
+              {overflowTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    onSelect(tab.id);
+                    setOpen(false);
+                  }}
+                  className={`flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-sm transition-colors ${
+                    activeTab === tab.id
+                      ? "bg-[var(--gold-500)]/20 text-[var(--gold-200)]"
+                      : "text-foreground hover:bg-white/5"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <tab.icon className="h-4 w-4 opacity-70" />
+                    {tab.label}
+                  </span>
+                  {tab.count > 0 && (
+                    <span className="text-[11px] text-muted-foreground font-display">
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
+    </div>
+  );
+}
+
+function TabPill({
+  tab,
+  active,
+  onClick,
+}: {
+  tab: { id: Tab; label: string; icon: any; count: number };
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <motion.button
+      onClick={onClick}
+      whileTap={{ scale: 0.96 }}
+      whileHover={{ scale: 1.02 }}
+      transition={{ type: "spring", stiffness: 400, damping: 24 }}
+      className={`relative flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shrink-0 transition-colors ${
+        active
+          ? "text-[var(--gold-50)] bg-[var(--gold-500)]/20 border border-[var(--gold-500)]/50 shadow-[0_0_20px_-6px_rgba(212,169,96,0.5)]"
+          : "text-muted-foreground hover:text-foreground glass glass-hover"
+      }`}
+    >
+      {active && (
+        <motion.span
+          layoutId="active-tab-glow"
+          className="absolute inset-0 rounded-full bg-[var(--gold-500)]/10 pointer-events-none"
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        />
+      )}
+      <tab.icon className="ml-1 h-4 w-4 relative" />
+      <span className="relative">{tab.label}</span>
+      {tab.count > 0 && (
+        <span
+          className={`mr-1 text-xs font-display relative ${
+            active ? "text-[var(--gold-200)]" : "text-muted-foreground"
+          }`}
+        >
+          {tab.count}
+        </span>
+      )}
+    </motion.button>
   );
 }
 
@@ -747,7 +864,7 @@ function ExpensesTab({
 
   const profileNames: Record<string, string> = {};
   participants.forEach((p) => {
-    profileNames[p.profile_id] = (p.profile as any)?.full_name || "???";
+    profileNames[p.profile_id] = (p.profile as any)?.full_name || UNKNOWN_NAME;
   });
 
   const currentUserName = profileNames[userId] || "אני";
@@ -792,7 +909,7 @@ function ExpensesTab({
           <div className="min-w-0 flex-1">
             <div className="text-sm font-medium">{exp.description}</div>
             <div className="text-xs text-muted-foreground">
-              {(exp as any).payer?.full_name} · {EXPENSE_CATEGORIES[exp.category as ExpenseCategory] || exp.category}
+              {(exp as any).payer?.full_name || profileNames[exp.paid_by] || UNKNOWN_NAME} · {EXPENSE_CATEGORIES[exp.category as ExpenseCategory] || "אחר"}
             </div>
           </div>
           <div className="flex items-center gap-2">

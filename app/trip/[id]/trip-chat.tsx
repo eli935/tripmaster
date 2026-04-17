@@ -27,7 +27,7 @@ export function TripChat({ tripId, userId, userName, participants }: TripChatPro
   // Profile names lookup
   const profileNames: Record<string, string> = {};
   participants.forEach((p) => {
-    profileNames[p.profile_id] = (p.profile as any)?.full_name || "???";
+    profileNames[p.profile_id] = (p.profile as any)?.full_name || "—";
   });
 
   // Load messages + subscribe to realtime

@@ -63,7 +63,7 @@ export function BalanceDashboard({
   const profileNames: Record<string, string> = {};
   const profilePhones: Record<string, string | undefined> = {};
   participants.forEach((p) => {
-    profileNames[p.profile_id] = (p.profile as any)?.full_name || "???";
+    profileNames[p.profile_id] = (p.profile as any)?.full_name || "—";
     profilePhones[p.profile_id] = (p.profile as any)?.phone;
   });
 
@@ -154,13 +154,13 @@ export function BalanceDashboard({
             <Sparkles className="h-3 w-3" />
             סה״כ הוצאות משותפות
           </div>
-          <div className="text-4xl font-bold tracking-tight tabular-nums">
+          <div className="font-display text-5xl md:text-6xl font-bold tracking-tight tabular-nums">
             {formatCurrency(countUpTotal)}
           </div>
           {totalOpen > 0.01 ? (
             <div className="mt-2 text-sm text-white/90">
               נותר להסדיר:{" "}
-              <span className="font-bold tabular-nums">{formatCurrency(countUpOpen)}</span>
+              <span className="font-bold tabular-nums font-display">{formatCurrency(countUpOpen)}</span>
             </div>
           ) : (
             <div className="mt-2 inline-flex items-center gap-1 text-sm text-white font-medium bg-white/20 rounded-full px-3 py-0.5">
@@ -195,12 +195,12 @@ export function BalanceDashboard({
                 {positive && <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />}
                 {negative && <TrendingDown className="h-3.5 w-3.5 text-rose-400" />}
               </div>
-              <div className="text-lg font-bold tabular-nums">
+              <div className="text-lg font-bold tabular-nums font-display">
                 {formatCurrency(b.totalPaid)}
               </div>
               <div className="text-[10px] text-muted-foreground">שילם</div>
               <div
-                className={`text-sm font-semibold mt-1.5 tabular-nums ${
+                className={`text-sm font-semibold mt-1.5 tabular-nums font-display ${
                   positive
                     ? "text-emerald-400"
                     : negative
@@ -261,7 +261,7 @@ export function BalanceDashboard({
                     <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-sm font-semibold border border-emerald-400/30">
                       {t.toName}
                     </span>
-                    <div className="mr-auto text-2xl font-bold tabular-nums">
+                    <div className="mr-auto text-2xl font-bold tabular-nums font-display">
                       {formatCurrency(t.amount)}
                     </div>
                   </div>
@@ -318,11 +318,11 @@ export function BalanceDashboard({
               className="flex items-center justify-between text-xs py-1.5 border-b border-white/5 last:border-0"
             >
               <span>
-                {profileNames[s.from_profile] || "???"} →{" "}
-                {profileNames[s.to_profile] || "???"}
+                {profileNames[s.from_profile] || "—"} →{" "}
+                {profileNames[s.to_profile] || "—"}
               </span>
               <span className="flex items-center gap-2">
-                <span className="tabular-nums font-medium">
+                <span className="tabular-nums font-display font-medium">
                   {formatCurrency(Number(s.amount))}
                 </span>
                 <span className="text-muted-foreground">
