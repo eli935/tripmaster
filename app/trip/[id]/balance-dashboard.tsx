@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Check, Smartphone, Wallet, Sparkles, TrendingUp, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
-import type { Expense, TripParticipant } from "@/lib/supabase/types";
+import type { Expense, Trip, TripParticipant } from "@/lib/supabase/types";
 import { calculateBalances, minimizeTransfers, formatCurrency } from "@/lib/expense-calculator";
 import { useRealtimeTable } from "@/lib/hooks/use-realtime";
 
@@ -45,6 +45,7 @@ interface Settlement {
 
 interface Props {
   tripId: string;
+  trip: Trip;
   expenses: Expense[];
   participants: TripParticipant[];
   settlements: Settlement[];
@@ -74,6 +75,7 @@ function useCountUp(target: number, duration = 800) {
 
 export function BalanceDashboard({
   tripId,
+  trip,
   expenses,
   participants,
   settlements,
@@ -173,7 +175,7 @@ export function BalanceDashboard({
   }, []);
 
   // Calculate balances (all in ILS via fx_rate_to_ils)
-  const balances = calculateBalances(expenses, participants, profileNames);
+  const balances = calculateBalances(expenses, participants, profileNames, trip);
 
   // Apply settlements to balances (settled debts reduce remaining balance)
   const settledByPair = new Map<string, number>();

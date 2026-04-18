@@ -57,6 +57,7 @@ export function TripSettings({ trip, participants, userId, isAdmin }: TripSettin
   const [status, setStatus] = useState<TripStatus>(trip.status as TripStatus);
   const [startDate, setStartDate] = useState(trip.start_date);
   const [endDate, setEndDate] = useState(trip.end_date);
+  const [adminParticipates, setAdminParticipates] = useState<boolean>(trip.admin_participates ?? true);
 
   const isDomestic = trip.location_type === "domestic";
 
@@ -185,7 +186,7 @@ export function TripSettings({ trip, participants, userId, isAdmin }: TripSettin
 
     const { error } = await supabase
       .from("trips")
-      .update({ name, destination, status, start_date: startDate, end_date: endDate })
+      .update({ name, destination, status, start_date: startDate, end_date: endDate, admin_participates: adminParticipates })
       .eq("id", trip.id);
 
     setSaving(false);
@@ -314,6 +315,20 @@ export function TripSettings({ trip, participants, userId, isAdmin }: TripSettin
                   />
                 </div>
               </div>
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-[var(--gold-500)]/20 bg-[var(--gold-500)]/5 cursor-pointer hover:bg-[var(--gold-500)]/10 transition">
+                <input
+                  type="checkbox"
+                  checked={adminParticipates}
+                  onChange={(e) => setAdminParticipates(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-[var(--gold-500)] accent-[var(--gold-600)]"
+                />
+                <div className="flex-1 text-right">
+                  <div className="text-sm font-medium text-[var(--gold-100)]">אני נוסע בטיול הזה</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">
+                    סמן אם אתה משתתף פיזית. אם לא — לא תיספר בכמויות, בציוד, בקניות ובחישובי חלוקת הוצאות (תשאר בניהול הטיול בלבד).
+                  </div>
+                </div>
+              </label>
               <Button type="submit" className="w-full" disabled={saving}>
                 {saving ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />}
                 {saving ? "שומר..." : "שמור שינויים"}

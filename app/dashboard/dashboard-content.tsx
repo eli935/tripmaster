@@ -170,8 +170,14 @@ export function DashboardContent({
       );
     }
 
-    // Load equipment templates for this holiday type
-    const totalPeople = (profile?.adults || 2) + (profile?.children?.length || 0);
+    // Load equipment templates for this holiday type.
+    // If the admin isn't physically joining the trip (admin_participates=false),
+    // seed equipment quantities for 0 people — participants joining later will
+    // bump quantities via their own adults+children counts when the admin
+    // recalculates. We keep a minimum of 1 for shared items (is_shared).
+    const totalPeople = adminParticipates
+      ? (profile?.adults || 2) + (profile?.children?.length || 0)
+      : 0;
     const { data: templates } = await supabase
       .from("equipment_templates")
       .select("*")
@@ -303,12 +309,13 @@ export function DashboardContent({
 
               {/* Admin participates — custom switch */}
               <div className="flex items-center justify-between rounded-xl border border-border/50 glass p-3">
-                <div className="space-y-0.5">
+                <div className="space-y-0.5 pr-2">
                   <Label className="text-sm cursor-pointer" htmlFor="admin-participates-switch">
-                    אני משתתף בטיול
+                    אני נוסע בטיול הזה
                   </Label>
-                  <p className="text-[11px] text-muted-foreground">
-                    כבה אם אתה מנהל טיול בלבד עבור אחרים
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    סמן אם אתה משתתף פיזית. אם לא — לא תיספר בכמויות,
+                    במלאי ובחלוקת הוצאות (עדיין תנהל את הטיול).
                   </p>
                 </div>
                 <button

@@ -1,4 +1,5 @@
-import type { Expense, ExpenseSplit, TripParticipant } from "./supabase/types";
+import type { Expense, ExpenseSplit, Trip, TripParticipant } from "./supabase/types";
+import { getCountedParticipants, getTotalHeadcount } from "./participant-utils";
 
 /**
  * Convert an expense amount to ILS using the locked FX rate.
@@ -37,16 +38,22 @@ interface Transfer {
 export function calculateBalances(
   expenses: Expense[],
   participants: TripParticipant[],
-  profileNames: Record<string, string>
+  profileNames: Record<string, string>,
+  trip?: Pick<Trip, "created_by" | "admin_participates">
 ): Balance[] {
-  const totalPeople = participants.reduce(
-    (sum, p) => sum + p.adults + p.children,
-    0
-  );
+  // Counted = participants whose adults+children feed into per-person splits
+  // and headcount math. When `admin_participates === false`, the admin row is
+  // dropped. If `trip` is omitted (legacy callers), fall back to the old
+  // behaviour where every row counts.
+  const counted = trip ? getCountedParticipants(participants, trip) : participants;
+  const totalPeople = trip
+    ? getTotalHeadcount(participants, trip).total
+    : participants.reduce((sum, p) => sum + p.adults + p.children, 0);
 
   const balances: Record<string, Balance> = {};
 
-  // Initialize balances for all participants
+  // Initialize balances for ALL participants (admin still needs a balance row
+  // because they can be an expense payer even when not counted).
   for (const p of participants) {
     balances[p.profile_id] = {
       profileId: p.profile_id,
@@ -86,22 +93,31 @@ export function calculateBalances(
           }
         }
       } else {
-        const others = participants.filter((p) => p.profile_id !== expense.paid_by);
-        const perOther = amountILS / others.length;
-        for (const p of others) {
-          balances[p.profile_id].totalOwed += perOther;
+        // "custom" without splits → split evenly among counted participants
+        // excluding the payer.
+        const others = counted.filter((p) => p.profile_id !== expense.paid_by);
+        if (others.length > 0) {
+          const perOther = amountILS / others.length;
+          for (const p of others) {
+            balances[p.profile_id].totalOwed += perOther;
+          }
         }
       }
     } else if (expense.split_type === "per_person") {
-      const perPerson = amountILS / totalPeople;
-      for (const p of participants) {
-        const share = perPerson * (p.adults + p.children);
-        balances[p.profile_id].totalOwed += share;
+      if (totalPeople > 0) {
+        const perPerson = amountILS / totalPeople;
+        for (const p of counted) {
+          const share = perPerson * (p.adults + p.children);
+          balances[p.profile_id].totalOwed += share;
+        }
       }
     } else {
-      const perFamily = amountILS / participants.length;
-      for (const p of participants) {
-        balances[p.profile_id].totalOwed += perFamily;
+      // "equal" — split per family across counted participants
+      if (counted.length > 0) {
+        const perFamily = amountILS / counted.length;
+        for (const p of counted) {
+          balances[p.profile_id].totalOwed += perFamily;
+        }
       }
     }
   }

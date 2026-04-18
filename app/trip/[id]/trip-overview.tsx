@@ -85,6 +85,7 @@ import {
   formatCurrency,
 } from "@/lib/expense-calculator";
 import { generateShoppingList, formatShoppingQuantity } from "@/lib/shopping-generator";
+import { getTotalHeadcount, getCountedParticipants } from "@/lib/participant-utils";
 
 interface TripOverviewProps {
   trip: Trip;
@@ -140,9 +141,11 @@ export function TripOverview({
   const router = useRouter();
   const supabase = createClient();
 
-  const totalPeople = participants.reduce(
-    (sum, p) => sum + (p.adults || 0) + (p.children || 0),
-    0
+  // Headcount respects trip.admin_participates — when false, the admin row is
+  // excluded from totals (but remains in the participant list UI).
+  const { total: totalPeople, families: countedFamilies } = getTotalHeadcount(
+    participants,
+    trip
   );
 
   // Realtime updates
@@ -192,7 +195,7 @@ export function TripOverview({
         </Button>
         <h1 className="font-serif text-4xl md:text-5xl font-bold tracking-tight leading-[1.1]">{trip.name}</h1>
         <p className="text-muted-foreground mt-1">
-          {trip.destination} · {totalPeople} נפשות · {participants.length} משפחות
+          {trip.destination} · {totalPeople} נפשות · {countedFamilies} משפחות
         </p>
       </div>
 
@@ -255,6 +258,7 @@ export function TripOverview({
           )}
           {activeTab === "expenses" && (
             <ExpensesTab
+              trip={trip}
               expenses={
                 isAdmin || (myPerms?.can_see_other_expenses ?? true)
                   ? expenses
@@ -494,12 +498,15 @@ function OverviewTab({
     (new Date(trip.end_date).getTime() - new Date(trip.start_date).getTime()) / (1000 * 60 * 60 * 24)
   ) + 1;
 
+  const countedFamilies = getCountedParticipants(participants, trip).length;
+  const adminExcluded = trip.admin_participates === false;
+
   return (
     <div className="space-y-6">
       {/* Premium Stats */}
       <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-3" delay={0.1}>
         {[
-          { value: participants.length, label: "משפחות", gradient: "from-blue-500 to-blue-600", icon: "👨‍👩‍👧‍👦" },
+          { value: countedFamilies, label: "משפחות", gradient: "from-blue-500 to-blue-600", icon: "👨‍👩‍👧‍👦" },
           { value: totalPeople, label: "נפשות", gradient: "from-purple-500 to-purple-600", icon: "👥" },
           { value: daysCount, label: "ימים", gradient: "from-teal-500 to-teal-600", icon: "📅" },
           { value: new Date(trip.start_date).toLocaleDateString("he-IL", { day: "numeric", month: "short" }), label: "יציאה", gradient: "from-amber-500 to-orange-600", icon: "✈️" },
@@ -542,31 +549,48 @@ function OverviewTab({
           <CardTitle className="text-base">משתתפים</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {participants.map((p) => (
-            <div
-              key={p.id}
-              className="flex items-center justify-between py-2 border-b last:border-0"
-            >
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center text-sm font-medium text-blue-400">
-                  {(p.profile as any)?.full_name?.charAt(0) || "?"}
-                </div>
-                <div>
-                  <div className="text-sm font-medium">
-                    {(p.profile as any)?.full_name}
-                    {p.role === "admin" && (
-                      <Badge variant="outline" className="mr-1 text-xs">
-                        מנהל
-                      </Badge>
-                    )}
+          {participants.map((p) => {
+            const isAdminOnly =
+              adminExcluded && p.profile_id === trip.created_by;
+            return (
+              <div
+                key={p.id}
+                className="flex items-center justify-between py-2 border-b last:border-0"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center text-sm font-medium text-blue-400">
+                    {(p.profile as any)?.full_name?.charAt(0) || "?"}
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {p.adults} מבוגרים · {p.children} ילדים
+                  <div>
+                    <div className="text-sm font-medium flex items-center gap-1 flex-wrap">
+                      <span>{(p.profile as any)?.full_name}</span>
+                      {p.role === "admin" && (
+                        <Badge variant="outline" className="mr-1 text-xs">
+                          מנהל
+                        </Badge>
+                      )}
+                      {isAdminOnly && (
+                        <Badge
+                          variant="outline"
+                          className="mr-1 text-[10px] border-amber-400/40 text-amber-300"
+                          title="מנהל בלבד — לא נספר בכמויות, במלאי ובחלוקת הוצאות"
+                        >
+                          לא נוסע
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {isAdminOnly ? (
+                        <span className="italic">מנהל הטיול בלבד — לא משתתף בפועל</span>
+                      ) : (
+                        <>{p.adults} מבוגרים · {p.children} ילדים</>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </CardContent>
       </Card>
     </div>
@@ -938,6 +962,7 @@ function ShoppingTab({
 
 /* ========= EXPENSES TAB ========= */
 function ExpensesTab({
+  trip,
   expenses,
   participants,
   tripId,
@@ -945,6 +970,7 @@ function ExpensesTab({
   isAdmin,
   settlements,
 }: {
+  trip: Trip;
   expenses: Expense[];
   participants: TripParticipant[];
   tripId: string;
@@ -966,6 +992,7 @@ function ExpensesTab({
     <div className="space-y-4">
       {/* Premium Balance Dashboard (v8.6) */}
       <BalanceDashboard
+        trip={trip}
         tripId={tripId}
         expenses={expenses}
         participants={participants}

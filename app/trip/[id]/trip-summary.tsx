@@ -27,6 +27,7 @@ import type {
 } from "@/lib/supabase/types";
 import { DAY_TYPE_LABELS } from "@/lib/hebrew-calendar";
 import { calculateBalances, minimizeTransfers, formatCurrency } from "@/lib/expense-calculator";
+import { getTotalHeadcount, getCountedParticipants, isCountedParticipant } from "@/lib/participant-utils";
 
 const HOLIDAY_LABELS: Record<HolidayType, string> = {
   pesach: "פסח",
@@ -57,9 +58,10 @@ export function TripSummary({
   shopping,
   lessons,
 }: TripSummaryProps) {
-  const totalPeople = participants.reduce(
-    (sum, p) => sum + (p.adults || 0) + (p.children || 0),
-    0
+  // Respect trip.admin_participates — exclude admin from headcount when false.
+  const { total: totalPeople, families: countedFamilies } = getTotalHeadcount(
+    participants,
+    trip
   );
   const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
   const purchasedItems = shopping.filter((s) => s.is_purchased).length;
@@ -69,7 +71,7 @@ export function TripSummary({
   participants.forEach((p) => {
     profileNames[p.profile_id] = (p.profile as any)?.full_name || "—";
   });
-  const balances = calculateBalances(expenses, participants, profileNames);
+  const balances = calculateBalances(expenses, participants, profileNames, trip);
   const transfers = minimizeTransfers(balances);
 
   return (
@@ -98,7 +100,7 @@ export function TripSummary({
           <Separator className="my-3" />
           <div className="grid grid-cols-4 gap-2 text-center">
             <div>
-              <div className="text-lg font-bold">{participants.length}</div>
+              <div className="text-lg font-bold">{countedFamilies}</div>
               <div className="text-xs text-muted-foreground">משפחות</div>
             </div>
             <div>
@@ -126,12 +128,19 @@ export function TripSummary({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-2">
-            {participants.map((p) => (
-              <div key={p.id} className="text-sm">
-                <span className="font-medium">{(p.profile as any)?.full_name}</span>
-                <span className="text-muted-foreground"> ({p.adults}+{p.children})</span>
-              </div>
-            ))}
+            {participants.map((p) => {
+              const counted = isCountedParticipant(p, trip);
+              return (
+                <div key={p.id} className="text-sm">
+                  <span className="font-medium">{(p.profile as any)?.full_name}</span>
+                  {counted ? (
+                    <span className="text-muted-foreground"> ({p.adults}+{p.children})</span>
+                  ) : (
+                    <span className="text-amber-400 text-xs"> · מנהל בלבד</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
