@@ -85,6 +85,26 @@ export interface TripEquipment {
   assignee?: Profile;
 }
 
+export interface DayBooking {
+  booking_id: string;
+  attraction_id: string | null;
+  attraction_name: string;
+  name: string;
+  description?: string | null;
+  image_url?: string | null;
+  category?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  website_url?: string | null;
+  waze_url?: string | null;
+  gmaps_url?: string | null;
+  time?: string | null;
+  duration_minutes?: number | null;
+  order_index?: number;
+  user_notes?: string | null;
+  created_at: string;
+}
+
 export interface TripDay {
   id: string;
   trip_id: string;
@@ -92,6 +112,7 @@ export interface TripDay {
   hebrew_date: string;
   day_type: DayType;
   notes: string | null;
+  bookings?: DayBooking[];
   meals?: Meal[];
 }
 
@@ -104,6 +125,11 @@ export interface Meal {
   servings: number;
   attendees_count?: number | null;
   recipe_id?: string | null;
+  time?: string | null;
+  location_name?: string | null;
+  location_address?: string | null;
+  location_lat?: number | null;
+  location_lng?: number | null;
   items?: MealItem[];
 }
 

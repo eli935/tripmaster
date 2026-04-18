@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -37,14 +38,8 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { useRealtimeTable } from "@/lib/hooks/use-realtime";
 import type { DestinationInfo, Attraction } from "@/lib/destinations";
-import type { Trip, TripDay } from "@/lib/supabase/types";
-
-interface DayBooking {
-  attraction_id: string;
-  attraction_name: string;
-  time: string | null;
-  created_at: string;
-}
+import { buildWazeLink, buildGmapsLink } from "@/lib/destinations";
+import type { Trip, TripDay, DayBooking } from "@/lib/supabase/types";
 
 type TripDayWithBookings = TripDay & { bookings?: DayBooking[] | null };
 
@@ -961,9 +956,22 @@ function AttractionCard({
       const newBookings = [
         ...existing,
         {
+          booking_id: (globalThis.crypto as Crypto).randomUUID(),
           attraction_id: `${tripId}-${a.name}`,
           attraction_name: a.name,
+          name: a.name,
+          description: a.description ?? null,
+          image_url: a.image ?? null,
+          category: a.type,
+          lat: typeof a.lat === "number" ? a.lat : null,
+          lng: typeof a.lng === "number" ? a.lng : null,
+          website_url: a.website ?? null,
+          waze_url: buildWazeLink(a.lat, a.lng, a.address),
+          gmaps_url: buildGmapsLink(a.lat, a.lng, a.address),
           time: null,
+          duration_minutes: a.duration_minutes ?? null,
+          order_index: existing.length,
+          user_notes: null,
           created_at: new Date().toISOString(),
         },
       ];
@@ -1741,7 +1749,7 @@ function DailyPlan({
                 <ul className="space-y-1.5">
                   {bookings.map((b) => (
                     <li
-                      key={b.attraction_id}
+                      key={b.attraction_id ?? b.booking_id ?? b.attraction_name}
                       className="flex items-center gap-2 text-xs rounded-lg bg-white/5 px-2.5 py-1.5 hover:bg-white/10 transition-colors"
                     >
                       <span className="text-[var(--gold-200)]">✦</span>
@@ -1752,7 +1760,7 @@ function DailyPlan({
                         </span>
                       )}
                       <button
-                        onClick={() => removeBooking(day.id, b.attraction_id)}
+                        onClick={() => removeBooking(day.id, b.attraction_id ?? "")}
                         className="shrink-0 text-muted-foreground hover:text-red-400 p-0.5 rounded transition-colors"
                         aria-label="מחק הזמנה"
                       >
@@ -1761,6 +1769,14 @@ function DailyPlan({
                     </li>
                   ))}
                 </ul>
+                {tripId && (
+                  <Link
+                    href={`/trip/${tripId}/itinerary/${day.id}`}
+                    className="inline-flex items-center gap-1.5 text-[11px] text-[var(--gold-200)] hover:text-[var(--gold-100)] font-medium mt-1 transition-colors"
+                  >
+                    פתח תוכניה יומית ←
+                  </Link>
+                )}
               </motion.div>
             );
           })}

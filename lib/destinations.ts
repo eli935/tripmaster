@@ -33,9 +33,11 @@ export interface KosherRestaurant {
   notes?: string;
 }
 
+export type AttractionCategory = "nature" | "historic" | "beach" | "museum" | "activity" | "viewpoint" | "religious" | "kids";
+
 export interface Attraction {
   name: string;
-  type: "nature" | "historic" | "beach" | "museum" | "activity" | "viewpoint" | "religious" | "kids";
+  type: AttractionCategory;
   description: string;
   address: string;
   google_maps: string;
@@ -45,10 +47,63 @@ export interface Attraction {
   duration?: string;
   hours?: string;
   image?: string;
+  lat?: number;
+  lng?: number;
+  duration_minutes?: number;
   must_visit?: boolean;
   kids_friendly?: boolean;
-  religious_compatible?: boolean; // can visit on Shabbat/Chag walking
+  religious_compatible?: boolean;
 }
+
+export const CATEGORY_THEME: Record<AttractionCategory, { label: string; icon: string; color: string }> = {
+  nature:    { label: "טבע",      icon: "TreePine",   color: "#5A6B3C" },
+  historic:  { label: "היסטורי",  icon: "Landmark",   color: "#B08B3F" },
+  beach:     { label: "חוף",      icon: "Waves",      color: "#0891b2" },
+  museum:    { label: "מוזיאון",  icon: "Building2",  color: "#9333ea" },
+  activity:  { label: "פעילות",   icon: "Zap",        color: "#f97316" },
+  viewpoint: { label: "תצפית",    icon: "Binoculars", color: "#1B3A6B" },
+  religious: { label: "דתי",      icon: "Star",       color: "#4f46e5" },
+  kids:      { label: "ילדים",    icon: "Smile",      color: "#ec4899" },
+};
+
+export function buildWazeLink(lat?: number | null, lng?: number | null, addressFallback?: string): string {
+  if (typeof lat === "number" && typeof lng === "number") {
+    return `https://waze.com/ul?ll=${lat}%2C${lng}&navigate=yes`;
+  }
+  return `https://waze.com/ul?q=${encodeURIComponent(addressFallback ?? "")}`;
+}
+
+export function buildGmapsLink(lat?: number | null, lng?: number | null, addressFallback?: string): string {
+  if (typeof lat === "number" && typeof lng === "number") {
+    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  }
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressFallback ?? "")}`;
+}
+
+export function buildAppleLink(lat?: number | null, lng?: number | null, addressFallback?: string): string {
+  if (typeof lat === "number" && typeof lng === "number") {
+    return `https://maps.apple.com/?daddr=${lat},${lng}`;
+  }
+  return `https://maps.apple.com/?q=${encodeURIComponent(addressFallback ?? "")}`;
+}
+
+export const MEAL_TYPE_DEFAULT_TIME: Record<string, string> = {
+  breakfast: "08:00",
+  lunch:     "13:00",
+  dinner:    "19:00",
+  seuda_1:   "11:30",
+  seuda_2:   "14:30",
+  seuda_3:   "17:30",
+};
+
+export const MEAL_TYPE_LABEL: Record<string, string> = {
+  breakfast: "ארוחת בוקר",
+  lunch:     "ארוחת צהריים",
+  dinner:    "ארוחת ערב",
+  seuda_1:   "סעודה ראשונה",
+  seuda_2:   "סעודה שנייה",
+  seuda_3:   "סעודה שלישית",
+};
 
 export interface DestinationInfo {
   name: string;
@@ -142,6 +197,9 @@ export const MONTENEGRO: DestinationInfo = {
     {
       name: "העיר העתיקה של קוטור (Stari Grad Kotor)",
       type: "historic",
+      lat: 42.4247,
+      lng: 18.7712,
+      duration_minutes: 180,
       description:
         "עיר עתיקה מוקפת חומות UNESCO עם סמטאות מעוגלות, כנסיות ומגדלים. טיפוס ל\"חומות העיר\" מציע תצפית מרהיבה על המפרץ.",
       address: "Stari Grad, Kotor, Montenegro",
@@ -157,6 +215,9 @@ export const MONTENEGRO: DestinationInfo = {
     {
       name: "מערת ליפה (Lipa Cave)",
       type: "nature",
+      lat: 42.3567,
+      lng: 18.9228,
+      duration_minutes: 90,
       description:
         "מערת נטיפים ענקית עם רכבת קטנה שלוקחת את המבקרים לכניסה. חוויה מושלמת לילדים.",
       address: "Lipa Dobrska, near Cetinje",
@@ -173,6 +234,9 @@ export const MONTENEGRO: DestinationInfo = {
     {
       name: "אגם סקאדר (Skadar Lake)",
       type: "nature",
+      lat: 42.2411,
+      lng: 19.0908,
+      duration_minutes: 240,
       description:
         "האגם הגדול ביותר בבלקן, גן לאומי עם שייטים על סירות עץ, ציפורים נדירות, ותצפיות מטורפות מ-Pavlova Strana.",
       address: "Virpazar, Montenegro",
@@ -188,6 +252,9 @@ export const MONTENEGRO: DestinationInfo = {
     {
       name: "חוות החמורים (Donkey Farm Martinici)",
       type: "kids",
+      lat: 42.5653,
+      lng: 19.1147, // TODO: verify coords
+      duration_minutes: 90,
       description:
         "חווה ייחודית שפתוחה רק בימי ראשון בבוקר. כרטיס הכניסה: קילו גזר או תפוחים להאכלת החמורים. חוויה בלתי נשכחת לילדים.",
       address: "Martinici, near Danilovgrad",
@@ -201,6 +268,9 @@ export const MONTENEGRO: DestinationInfo = {
     {
       name: "מפלי ניאגרה מונטנגרו (Niagara Falls)",
       type: "nature",
+      lat: 42.4239,
+      lng: 19.3433,
+      duration_minutes: 90,
       description:
         "מפלים יפהפיים שפעילים בעיקר באביב. מקום מעולה לפיקניק על הסלעים ליד המים.",
       address: "Niagara Falls, near Podgorica",
@@ -213,6 +283,9 @@ export const MONTENEGRO: DestinationInfo = {
     {
       name: "רכבל קוטור (Kotor Cable Car)",
       type: "viewpoint",
+      lat: 42.4306,
+      lng: 18.7856, // TODO: verify coords
+      duration_minutes: 150,
       description:
         "רכבל חדש שעולה מהעמק לפסגת הר לובצ'ן ב-11 דקות. הנוף עוצר נשימה.",
       address: "Dub Station, Kotor",
@@ -228,6 +301,9 @@ export const MONTENEGRO: DestinationInfo = {
     {
       name: "פרסט ואי גבירתנו של הסלעים",
       type: "historic",
+      lat: 42.4883,
+      lng: 18.7022,
+      duration_minutes: 120,
       description:
         "עיירת חוף קסומה. שייט בסירה לאי מלאכותי עם כנסייה היסטורית. חוויה יפהפייה.",
       address: "Perast, Bay of Kotor",
@@ -241,6 +317,9 @@ export const MONTENEGRO: DestinationInfo = {
     {
       name: "סבטי סטפן (Sveti Stefan)",
       type: "viewpoint",
+      lat: 42.2547,
+      lng: 18.8908,
+      duration_minutes: 60,
       description:
         "אי-עיירה היסטורית מחוברת ליבשה בגשר חול. אייקון תיירותי של מונטנגרו. תצפית בלבד (האי פרטי).",
       address: "Sveti Stefan, near Budva",
@@ -254,6 +333,9 @@ export const MONTENEGRO: DestinationInfo = {
     {
       name: "מוזיאון הצוללות (Naval Heritage Collection)",
       type: "museum",
+      lat: 42.4342,
+      lng: 18.6936,
+      duration_minutes: 60,
       description:
         "צוללת אמיתית שעומדת על היבשה שאפשר להיכנס אליה. חוויה אותנטית שילדים מתים עליה.",
       address: "Tivat, Porto Montenegro",
@@ -266,6 +348,9 @@ export const MONTENEGRO: DestinationInfo = {
     {
       name: "חוף מוגרן (Mogren Beach)",
       type: "beach",
+      lat: 42.2811,
+      lng: 18.8311,
+      duration_minutes: 150,
       description:
         "חוף חבוי שחוצים אליו דרך שביל חצוב בצוק. מים צלולים. מתאים למנהג קריעת ים סוף בשביעי של פסח.",
       address: "Mogren, Budva",
@@ -304,7 +389,7 @@ export const MONTENEGRO: DestinationInfo = {
     "בשרי טרי: מביאים מהארץ (קפוא)",
     "חלב ישראל: רק דרך בית חב״ד בהזמנה מראש",
   ],
-  coordinates: { lat: 42.2864, lng: 18.8400, tz: "Europe/Podgorica", geonameid: 3204541 },
+  coordinates: { lat: 42.7087, lng: 19.3744, tz: "Europe/Podgorica", geonameid: 3204541 },
 };
 
 // ========= ITALY — ROME =========
@@ -366,6 +451,9 @@ export const ROME: DestinationInfo = {
     {
       name: "הקולוסיאום",
       type: "historic",
+      lat: 41.8902,
+      lng: 12.4922,
+      duration_minutes: 150,
       description: "האמפיתיאטרון הגדול ביותר אי פעם שנבנה, סמל של רומא העתיקה.",
       address: "Piazza del Colosseo, Rome",
       google_maps: "https://maps.google.com/?q=Colosseum+Rome",
@@ -378,6 +466,9 @@ export const ROME: DestinationInfo = {
     {
       name: "הוותיקן וכיפת פטרוס",
       type: "historic",
+      lat: 41.9022,
+      lng: 12.4539,
+      duration_minutes: 240,
       description: "מרכז הכנסייה הקתולית עם כיפת מיכלאנג'לו הידועה.",
       address: "Vatican City",
       google_maps: "https://maps.google.com/?q=Vatican+City",
@@ -388,6 +479,9 @@ export const ROME: DestinationInfo = {
     {
       name: "מזרקת טרווי",
       type: "historic",
+      lat: 41.9009,
+      lng: 12.4833,
+      duration_minutes: 30,
       description: "המזרקה הברוקית המפורסמת בעולם. מסורת: לזרוק מטבע כדי לחזור לרומא.",
       address: "Piazza di Trevi, Rome",
       google_maps: "https://maps.google.com/?q=Trevi+Fountain",
@@ -399,6 +493,8 @@ export const ROME: DestinationInfo = {
     {
       name: "הגטו היהודי",
       type: "religious",
+      lat: 41.8920,
+      lng: 12.4778,
       description: "הגטו היהודי העתיק בעולם, עם בית הכנסת הגדול של רומא.",
       address: "Rione XI Sant'Angelo, Rome",
       google_maps: "https://maps.google.com/?q=Jewish+Ghetto+Rome",
@@ -465,6 +561,9 @@ export const ATHENS: DestinationInfo = {
     {
       name: "האקרופוליס",
       type: "historic",
+      lat: 37.9715,
+      lng: 23.7267,
+      duration_minutes: 180,
       description: "הסמל של אתונה העתיקה, מקדש הפרתנון על הגבעה.",
       address: "Acropolis, Athens",
       google_maps: "https://maps.google.com/?q=Acropolis+Athens",
