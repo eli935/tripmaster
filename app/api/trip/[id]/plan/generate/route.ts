@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { findDestination } from "@/lib/destinations";
+import { callGemini, hasGeminiKey } from "@/lib/gemini";
 
 /**
  * POST /api/trip/[id]/plan/generate
@@ -58,6 +59,74 @@ const SYSTEM_PROMPT = `אתה מתכנן טיולים מקצועי למשפחו�
 8. כל item עם attraction_id רק אם הוא קיים בקטלוג שמסרתי; אחרת attraction_id=null.
 9. description: תיאור קצר (עד 2 משפטים) למה הפריט מתאים — בלי פרטי קשר.`;
 
+/**
+ * Ensemble merge: combine two same-schema plans from different models.
+ * Per day:
+ *   - Start from Claude's items (primary).
+ *   - Add Gemini items whose normalized title isn't already present.
+ *   - If an item exists in both, keep the one with the richer description.
+ *   - Re-sort by time.
+ * Days not present in both are taken from whichever plan provided them.
+ */
+function normTitle(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, " ").replace(/[^\p{L}\p{N} ]/gu, "");
+}
+
+function mergePlans(
+  a: GeneratedPlan | null,
+  b: GeneratedPlan | null,
+  days: Array<{ id: string }>
+): GeneratedPlan {
+  // Index by day_id
+  const aByDay = new Map<string, GeneratedItem[]>();
+  const bByDay = new Map<string, GeneratedItem[]>();
+  for (const d of a?.days ?? []) aByDay.set(d.day_id, d.items ?? []);
+  for (const d of b?.days ?? []) bByDay.set(d.day_id, d.items ?? []);
+
+  const mergedDays: GeneratedDay[] = days.map(({ id }) => {
+    const aItems = aByDay.get(id) ?? [];
+    const bItems = bByDay.get(id) ?? [];
+    if (aItems.length === 0) return { day_id: id, items: bItems };
+    if (bItems.length === 0) return { day_id: id, items: aItems };
+
+    const out: GeneratedItem[] = [];
+    const seen = new Map<string, number>(); // normalized title → index in `out`
+
+    const pushOrEnrich = (it: GeneratedItem) => {
+      const key = normTitle(it.title);
+      if (!key) return;
+      const existingIdx = seen.get(key);
+      if (existingIdx === undefined) {
+        out.push(it);
+        seen.set(key, out.length - 1);
+      } else {
+        // Same title — keep the richer description, and the attraction_id
+        // that isn't null.
+        const existing = out[existingIdx];
+        const mergedDesc =
+          (it.description?.length ?? 0) > (existing.description?.length ?? 0)
+            ? it.description
+            : existing.description;
+        const mergedAttrId = existing.attraction_id ?? it.attraction_id ?? null;
+        out[existingIdx] = {
+          ...existing,
+          description: mergedDesc ?? existing.description,
+          attraction_id: mergedAttrId,
+        };
+      }
+    };
+
+    for (const it of aItems) pushOrEnrich(it);
+    for (const it of bItems) pushOrEnrich(it);
+
+    // Sort by time, stable
+    out.sort((x, y) => (x.time ?? "").localeCompare(y.time ?? ""));
+    return { day_id: id, items: out };
+  });
+
+  return { days: mergedDays };
+}
+
 interface RequestBody {
   preferences: {
     pace?: "slow" | "balanced" | "packed";
@@ -83,6 +152,8 @@ interface GeneratedDay {
     notes?: string | null;
   }>;
 }
+
+type GeneratedItem = GeneratedDay["items"][number];
 
 interface GeneratedPlan {
   days: GeneratedDay[];
@@ -200,24 +271,58 @@ ${JSON.stringify(catalog, null, 2)}
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-  let plan: GeneratedPlan;
-  try {
-    const msg = await client.messages.create({
-      model: MODEL,
-      max_tokens: 4096,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userPrompt }],
-    });
-    const text = msg.content.find((c) => c.type === "text")?.text ?? "";
-    const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-    plan = JSON.parse(cleaned) as GeneratedPlan;
-  } catch (err) {
-    console.error("plan generation failed", err);
+  // ═══════════════════════════════════════════════════════════════════
+  // ENSEMBLE: Claude + Gemini in parallel (when Gemini key available).
+  // Strategy: both generate full plans; we merge per-day (de-dup by title,
+  // keep the richer description). If Gemini key missing → Claude only.
+  // Either model failing doesn't break the flow as long as ONE succeeded.
+  // ═══════════════════════════════════════════════════════════════════
+  const claudePromise = (async (): Promise<GeneratedPlan | null> => {
+    try {
+      const msg = await client.messages.create({
+        model: MODEL,
+        max_tokens: 4096,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userPrompt }],
+      });
+      const text = msg.content.find((c) => c.type === "text")?.text ?? "";
+      const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+      return JSON.parse(cleaned) as GeneratedPlan;
+    } catch (err) {
+      console.error("[plan] Claude failed", err);
+      return null;
+    }
+  })();
+
+  const geminiPromise = (async (): Promise<GeneratedPlan | null> => {
+    if (!hasGeminiKey()) return null;
+    try {
+      const raw = await callGemini({
+        system: SYSTEM_PROMPT,
+        user: userPrompt,
+        maxOutputTokens: 4096,
+      });
+      const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+      return JSON.parse(cleaned) as GeneratedPlan;
+    } catch (err) {
+      console.warn("[plan] Gemini failed (non-fatal, continuing with Claude only)", err);
+      return null;
+    }
+  })();
+
+  const [claudePlan, geminiPlan] = await Promise.all([claudePromise, geminiPromise]);
+
+  if (!claudePlan && !geminiPlan) {
     return NextResponse.json(
       { error: "AI generation failed — try again" },
       { status: 502 }
     );
   }
+
+  const plan: GeneratedPlan = mergePlans(claudePlan, geminiPlan, days);
+  const modelsUsed: string[] = [];
+  if (claudePlan) modelsUsed.push("claude");
+  if (geminiPlan) modelsUsed.push("gemini");
 
   // ═══════════════════════════════════════════════════════════════════
   // GUARDRAIL ENFORCEMENT (server-side) — trust but verify the LLM
@@ -371,6 +476,7 @@ ${JSON.stringify(catalog, null, 2)}
     ok: true,
     days_generated: enrichedDays.length,
     total_items: totalItems,
+    models_used: modelsUsed,
     guardrails: {
       phones_stripped: violationsStripped,
       shabbat_vehicles_blocked: carsRemovedOnShabbat,
