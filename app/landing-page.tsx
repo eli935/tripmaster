@@ -305,6 +305,26 @@ export function LandingPage() {
       {/* Lead form */}
       <LeadForm locale={locale} copy={t.form} />
 
+      {/* Floating WhatsApp — always visible on the landing page */}
+      <a
+        href={`https://wa.me/972524848358?text=${encodeURIComponent(
+          locale === "he"
+            ? "שלום אלי, ראיתי את TripMaster ורציתי לשמוע עוד"
+            : "Hi Eli, I saw TripMaster and wanted to learn more"
+        )}`}
+        target="_blank"
+        rel="noreferrer"
+        aria-label="WhatsApp"
+        className="fixed bottom-5 start-5 z-30 inline-flex items-center gap-2 px-4 py-3 rounded-full bg-[#25D366] text-white shadow-2xl hover:scale-105 transition-transform"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M20.52 3.48A11.94 11.94 0 0012.03 0C5.45 0 .08 5.37.08 11.96c0 2.11.55 4.17 1.6 5.98L0 24l6.23-1.63a11.95 11.95 0 005.8 1.48h.01c6.58 0 11.95-5.37 11.95-11.96 0-3.19-1.24-6.19-3.47-8.41zM12.04 21.8h-.01a9.82 9.82 0 01-5-1.37l-.36-.21-3.69.97.99-3.6-.23-.37a9.83 9.83 0 01-1.51-5.26c0-5.44 4.43-9.87 9.88-9.87 2.64 0 5.12 1.03 6.98 2.9a9.79 9.79 0 012.89 6.98c0 5.45-4.43 9.83-9.94 9.83zm5.4-7.36c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.66.15-.2.3-.76.97-.93 1.17-.17.2-.34.22-.63.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.64-2.05-.17-.3-.02-.46.13-.6.13-.13.3-.34.45-.51.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.66-1.6-.9-2.19-.24-.58-.48-.5-.66-.5l-.56-.01c-.2 0-.52.07-.79.37s-1.04 1.02-1.04 2.48 1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.22 1.36.19 1.87.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35z" />
+        </svg>
+        <span className="hidden md:inline text-sm font-medium">
+          {locale === "he" ? "דברו איתנו" : "Chat with us"}
+        </span>
+      </a>
+
       {/* Footer */}
       <footer className="py-8 px-4 md:px-8 border-t border-[color:var(--gold-500)]/15 text-center text-xs text-foreground/50">
         <div className="mb-1">{t.footer.built}</div>
@@ -516,7 +536,16 @@ function LeadForm({ locale, copy }: { locale: Locale; copy: (typeof COPY)["he"][
             <a href="mailto:eli@biglog.co.il" className="inline-flex items-center gap-1 hover:text-[color:var(--gold-200)]">
               <Mail size={11} /> eli@biglog.co.il
             </a>
-            <a href="https://wa.me/972504440000" className="inline-flex items-center gap-1 hover:text-[color:var(--gold-200)]">
+            <a
+              href={`https://wa.me/972524848358?text=${encodeURIComponent(
+                locale === "he"
+                  ? "שלום אלי, ראיתי את TripMaster ורציתי לשמוע עוד"
+                  : "Hi Eli, I saw TripMaster and wanted to learn more"
+              )}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 hover:text-[color:var(--gold-200)]"
+            >
               <Phone size={11} /> WhatsApp
             </a>
           </div>
