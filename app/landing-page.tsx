@@ -11,15 +11,53 @@ import {
 
 type Locale = "he" | "en";
 
+// Premium destination imagery — curated Unsplash photography
+const DESTINATIONS: Array<{
+  name: { he: string; en: string };
+  country: { he: string; en: string };
+  img: string;
+}> = [
+  {
+    name: { he: "סנטוריני", en: "Santorini" },
+    country: { he: "יוון", en: "Greece" },
+    img: "https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=800&q=80&auto=format",
+  },
+  {
+    name: { he: "רומא", en: "Rome" },
+    country: { he: "איטליה", en: "Italy" },
+    img: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=800&q=80&auto=format",
+  },
+  {
+    name: { he: "קוטור", en: "Kotor" },
+    country: { he: "מונטנגרו", en: "Montenegro" },
+    img: "https://images.unsplash.com/photo-1596627116790-af6f46dddbae?w=800&q=80&auto=format",
+  },
+  {
+    name: { he: "האלפים", en: "Swiss Alps" },
+    country: { he: "שווייץ", en: "Switzerland" },
+    img: "https://images.unsplash.com/photo-1527668752968-14dc70a27c95?w=800&q=80&auto=format",
+  },
+  {
+    name: { he: "פראג", en: "Prague" },
+    country: { he: "צ׳כיה", en: "Czechia" },
+    img: "https://images.unsplash.com/photo-1541849546-216549ae216d?w=800&q=80&auto=format",
+  },
+  {
+    name: { he: "אתונה", en: "Athens" },
+    country: { he: "יוון", en: "Greece" },
+    img: "https://images.unsplash.com/photo-1555993539-1732b0258235?w=800&q=80&auto=format",
+  },
+];
+
 const COPY = {
   he: {
     dir: "rtl" as const,
     nav: { login: "כניסה", language: "English" },
     hero: {
-      tagline: "תכנון טיולים חכם למשפחות ישראליות",
-      title: "הטיול הבא שלכם — מתוכנן, מאורגן, בעברית",
-      sub: "אפליקציה חכמה שמאחדת תכנון ארוחות, רשימות ציוד, מיקומי בית חב״ד, מסעדות כשרות, זמני שבת, תקציב משפחתי וסדר יום מלא — הכל במקום אחד.",
-      cta: "התחל עכשיו",
+      tagline: "בוטיק תכנון טיולים משפחתיים",
+      title: "הטיול הבא שלכם — מתוכנן בקפידה, עד הפרט האחרון",
+      sub: "צוות TripMaster מלווה משפחות ישראליות בתכנון חופשות בחו״ל. ארוחות, לינה, בית חב״ד, כשרות, זמני שבת, מסלול יומי ותקציב משפחתי — הכל מנוהל במקום אחד, בליווי אישי.",
+      cta: "התחילו תכנון",
       cta2: "השאירו פרטים ונחזור אליכם",
     },
     features: {
@@ -47,34 +85,34 @@ const COPY = {
     how: {
       title: "איך זה עובד",
       steps: [
-        { n: 1, t: "השאירו פרטים", d: "יעד, תאריכים משוערים, הרכב המשפחה" },
-        { n: 2, t: "נחזור אליכם", d: "אני (אלי) יוצר איתכם קשר אישי תוך 24 שעות כדי להבין מה הכי חשוב לכם" },
-        { n: 3, t: "תכנון בשיתוף", d: "אנחנו בונים ביחד את הטיול — אתם בוחרים מתוך הצעות, אני דואג לפרטים" },
-        { n: 4, t: "טיול בראש שקט", d: "אפליקציה ביד, כל המידע זמין תמיד, ואני זמין אם צריך עזרה בשטח" },
+        { n: 1, t: "השאירו פרטים", d: "יעד, תאריכים, הרכב המשפחה — שאלון קצר של דקה" },
+        { n: 2, t: "נחזור אליכם", d: "הצוות שלנו יוצר איתכם קשר תוך 24 שעות לשיחת היכרות — מה חשוב לכם, מה התקציב, מה המרקם של המשפחה" },
+        { n: 3, t: "תכנון בשיתוף", d: "אנחנו בונים ביחד את הטיול. אתם בוחרים מתוך הצעות מדויקות, אנחנו דואגים לכל הפרטים הקטנים" },
+        { n: 4, t: "טיול בראש שקט", d: "אפליקציה בידיים, כל המידע זמין תמיד, והצוות שלנו זמין לכם אם צריך עזרה גם בשטח" },
       ],
     },
     form: {
-      title: "השאירו פרטים ונחזור אליכם תוך 24 שעות",
-      sub: "ללא התחייבות, ללא עלות — שיחת היכרות להבנת הצרכים שלכם",
+      title: "השאירו פרטים — נחזור אליכם תוך 24 שעות",
+      sub: "שיחת היכרות ללא התחייבות וללא עלות, להבנת הצרכים של המשפחה שלכם",
       name: "שם מלא",
       email: "אימייל",
       phone: "טלפון (עדיף וואטסאפ)",
       destination: "יעד הטיול",
       destinationPh: "רומא / אתונה / מונטנגרו / אחר",
-      travelDates: "תאריכים משוערים",
-      travelDatesPh: "פסח 2026 / ספטמבר / בין הזמנים",
+      startDate: "תאריך יציאה",
+      endDate: "תאריך חזרה",
       adults: "מבוגרים",
       children: "ילדים",
       message: "משהו שכדאי שנדע מראש?",
       messagePh: "אלרגיות, העדפות, נסיבות מיוחדות...",
       submit: "שלח פרטים",
       sending: "שולח...",
-      success: "תודה! קיבלתי את הפרטים שלך ואחזור אליך תוך 24 שעות.",
+      success: "תודה! קיבלנו את הפרטים שלכם ונחזור אליכם תוך 24 שעות.",
       error: "שגיאה בשליחה — אפשר לנסות שוב או לשלוח ישירות ל-eli@biglog.co.il",
       required: "שדה חובה",
     },
     footer: {
-      built: "נבנה על ידי אלי רוזנפלד · BigLog",
+      built: "TripMaster · בוטיק תכנון טיולים משפחתיים",
       contact: "יצירת קשר: eli@biglog.co.il",
     },
   },
@@ -82,10 +120,10 @@ const COPY = {
     dir: "ltr" as const,
     nav: { login: "Log in", language: "עברית" },
     hero: {
-      tagline: "Smart trip planning for Israeli families",
-      title: "Your next trip — planned, organized, stress-free",
-      sub: "A smart app that unifies meal planning, packing lists, Chabad house locations, kosher restaurants, Shabbat times, family budgeting, and a full daily itinerary — all in one place.",
-      cta: "Get started",
+      tagline: "Boutique family trip planning",
+      title: "Your next trip — planned with care, down to the last detail",
+      sub: "The TripMaster team guides Israeli families through international trip planning. Meals, accommodation, Chabad houses, kosher logistics, Shabbat timing, daily itinerary and family budget — all managed in one place, with personal concierge support.",
+      cta: "Start planning",
       cta2: "Leave your details and we'll reach out",
     },
     features: {
@@ -113,34 +151,34 @@ const COPY = {
     how: {
       title: "How it works",
       steps: [
-        { n: 1, t: "Share your details", d: "Destination, approximate dates, family composition" },
-        { n: 2, t: "We reach out", d: "I (Eli) personally contact you within 24 hours to understand what matters most" },
-        { n: 3, t: "Plan together", d: "We build the trip together — you choose from suggestions, I handle the details" },
-        { n: 4, t: "Travel stress-free", d: "App in hand, all info always available, and I'm on call if you need help on the ground" },
+        { n: 1, t: "Share your details", d: "Destination, dates, family composition — a short 1-minute form" },
+        { n: 2, t: "We reach out", d: "Our team contacts you within 24 hours for a discovery call — what matters, budget, the family dynamic" },
+        { n: 3, t: "Plan together", d: "We build the trip together. You pick from curated suggestions, we handle every detail" },
+        { n: 4, t: "Travel stress-free", d: "App in hand, all info always accessible, and our team is on call if you need help on the ground" },
       ],
     },
     form: {
       title: "Leave your details — we'll reach out within 24 hours",
-      sub: "No commitment, no cost — a discovery call to understand your needs",
+      sub: "No commitment, no cost — a discovery call to understand your family's needs",
       name: "Full name",
       email: "Email",
       phone: "Phone (WhatsApp preferred)",
       destination: "Trip destination",
       destinationPh: "Rome / Athens / Montenegro / other",
-      travelDates: "Approximate dates",
-      travelDatesPh: "Passover 2026 / September / summer break",
+      startDate: "Departure date",
+      endDate: "Return date",
       adults: "Adults",
       children: "Children",
       message: "Anything we should know upfront?",
       messagePh: "Allergies, preferences, special circumstances...",
       submit: "Send",
       sending: "Sending...",
-      success: "Thanks! I got your details and will reach out within 24 hours.",
+      success: "Thank you! We received your details and will reach out within 24 hours.",
       error: "Submission failed — try again or email directly to eli@biglog.co.il",
       required: "Required",
     },
     footer: {
-      built: "Built by Eli Rosenfeld · BigLog",
+      built: "TripMaster · Boutique family trip planning",
       contact: "Contact: eli@biglog.co.il",
     },
   },
@@ -184,40 +222,77 @@ export function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="relative pt-28 md:pt-36 pb-16 md:pb-24 px-4 md:px-8 overflow-hidden">
+      {/* Hero with layered imagery */}
+      <section className="relative pt-28 md:pt-36 pb-16 md:pb-24 px-4 md:px-8 overflow-hidden min-h-[90vh] md:min-h-[85vh] flex items-center">
+        {/* Primary hero image — Santorini at golden hour */}
         <div
-          className="absolute inset-0 opacity-30 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage:
-              "url('https://images.unsplash.com/photo-1488085061387-422e29b40080?w=1600&q=75&auto=format')",
+              "url('https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=2000&q=80&auto=format')",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[color:var(--background)]/40 via-[color:var(--background)]/80 to-[color:var(--background)]" />
+        {/* Gradients for legibility + drama */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-[color:var(--background)]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--background)]/40 via-transparent to-[color:var(--background)]/40" />
+
         <div className="relative max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
           >
-            <span className="inline-block text-[11px] uppercase tracking-[0.3em] text-[color:var(--gold-300)] mb-4">
+            <span className="inline-block text-[11px] md:text-xs uppercase tracking-[0.35em] text-[color:var(--gold-300)] mb-5 drop-shadow-lg">
               {t.hero.tagline}
             </span>
-            <h1 className="font-serif text-4xl md:text-6xl leading-[1.1] text-[color:var(--gold-100)] mb-6">
+            <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl leading-[1.05] text-white mb-6 drop-shadow-2xl">
               {t.hero.title}
             </h1>
-            <p className="text-base md:text-lg text-foreground/80 max-w-2xl mx-auto mb-8 leading-relaxed">
+            <p className="text-base md:text-lg text-white/90 max-w-2xl mx-auto mb-10 leading-relaxed drop-shadow-md">
               {t.hero.sub}
             </p>
             <a
               href="#lead-form"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-l from-[color:var(--gold-700)] to-[color:var(--gold-500)] text-white font-medium shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-gradient-to-l from-[color:var(--gold-700)] to-[color:var(--gold-500)] text-white font-medium shadow-2xl hover:shadow-[0_20px_60px_-20px_rgba(212,169,96,0.6)] hover:scale-[1.03] transition-all"
             >
               <Sparkles size={18} />
               {t.hero.cta2}
               <ArrowRight size={16} className={locale === "he" ? "rotate-180" : ""} />
             </a>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Destinations we know — premium image strip */}
+      <section className="py-12 md:py-16 px-4 md:px-8 bg-[color:var(--background)]">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-8">
+            <span className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--gold-300)]">
+              {locale === "he" ? "יעדים שאנחנו מכירים מקרוב" : "Destinations we know intimately"}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-3">
+            {DESTINATIONS.map((d, i) => (
+              <motion.div
+                key={d.name.he}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className="relative aspect-[3/4] rounded-2xl overflow-hidden group cursor-default"
+              >
+                <div
+                  className="absolute inset-0 bg-cover bg-center group-hover:scale-110 transition-transform duration-700"
+                  style={{ backgroundImage: `url('${d.img}')` }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 inset-x-0 p-3 text-white">
+                  <div className="font-serif text-sm md:text-base">{d.name[locale]}</div>
+                  <div className="text-[10px] text-white/70">{d.country[locale]}</div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -369,7 +444,8 @@ function LeadForm({
   const [email, setEmail] = useState(prefillEmail ?? "");
   const [phone, setPhone] = useState("");
   const [destination, setDestination] = useState("");
-  const [travelDates, setTravelDates] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
   const [message, setMessage] = useState("");
@@ -387,7 +463,10 @@ function LeadForm({
           email,
           phone,
           destination,
-          travel_dates: travelDates,
+          travel_dates:
+            startDate && endDate
+              ? `${startDate} → ${endDate}`
+              : startDate || endDate || "",
           adults,
           children,
           message,
@@ -441,8 +520,8 @@ function LeadForm({
               </div>
               <p className="text-xs md:text-sm text-foreground/70 leading-relaxed">
                 {locale === "he"
-                  ? "נראה שעדיין אין לך חשבון או הזמנה פעילה. השאר פרטים קצרים ואני (אלי) אחזור אליך אישית תוך 24 שעות להכיר ולתאם איך אנחנו בונים יחד את הטיול הבא שלך."
-                  : "It looks like you don't have an account or active invitation yet. Leave a few details and I (Eli) will reach out personally within 24 hours to understand how we can plan your next trip together."}
+                  ? "נראה שעדיין אין לכם חשבון או הזמנה פעילה. השאירו פרטים קצרים והצוות שלנו יחזור אליכם תוך 24 שעות לשיחת היכרות — נבין מה חשוב לכם ונתחיל לתכנן יחד."
+                  : "It looks like you don't have an account or active invitation yet. Leave a few details and our team will reach out within 24 hours for a discovery call — we'll understand what matters and start planning together."}
               </p>
             </div>
           </motion.div>
@@ -506,14 +585,28 @@ function LeadForm({
             </div>
           </div>
 
-          <div>
-            <label className={labelCls}>{copy.travelDates}</label>
-            <input
-              value={travelDates}
-              onChange={(e) => setTravelDates(e.target.value)}
-              className={inputCls}
-              placeholder={copy.travelDatesPh}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>{copy.startDate}</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className={inputCls}
+                dir="ltr"
+              />
+            </div>
+            <div>
+              <label className={labelCls}>{copy.endDate}</label>
+              <input
+                type="date"
+                value={endDate}
+                min={startDate || undefined}
+                onChange={(e) => setEndDate(e.target.value)}
+                className={inputCls}
+                dir="ltr"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
