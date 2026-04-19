@@ -85,14 +85,14 @@ export function PlanWizard({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-stretch md:items-center justify-center md:p-4"
       onClick={onClose}
       dir="rtl"
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="w-full max-w-xl bg-[color:var(--card)] rounded-3xl overflow-hidden border border-[color:var(--gold-500)]/30 shadow-2xl"
+        className="w-full md:max-w-xl md:rounded-3xl bg-[color:var(--card)] overflow-hidden md:border border-[color:var(--gold-500)]/30 shadow-2xl flex flex-col md:h-auto h-full md:max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -119,7 +119,7 @@ export function PlanWizard({
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5 min-h-[280px]">
+        <div className="px-6 py-5 min-h-[280px] flex-1 overflow-y-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}

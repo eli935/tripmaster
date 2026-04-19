@@ -30,6 +30,7 @@ stage-<N>_v<X.Y>_<YYYY-MM-DD>_<HH-MM>.md
 | 12 | growth-marketer + SaaS-economist | 📋 אסטרטגיה מוכנה — דורש החלטה | 2026-04-19 | 01:00 | [stage-12_v1.0_2026-04-19_01-00.md](stage-12_v1.0_2026-04-19_01-00.md) |
 | 13 | performance + financial + tripmaster-manager | ✅ 5 שיפורים דחופים · 📋 Wizard Phase 1 מוכן | 2026-04-19 | 02:00 | [stage-13_v1.0_2026-04-19_02-00.md](stage-13_v1.0_2026-04-19_02-00.md) |
 | 14 | coordinator | ✅ Wizard Phase 1 — תכנון מלא עם AI (v9.4) | 2026-04-19 | 03:00 | [stage-14_v1.0_2026-04-19_03-00.md](stage-14_v1.0_2026-04-19_03-00.md) |
+| 15 | vendor-seed + coordinator | ✅ Wizard Phase 2+3+4 + Guardrails + 30 vendors (v9.5) | 2026-04-19 | 04:00 | [stage-15_v1.0_2026-04-19_04-00.md](stage-15_v1.0_2026-04-19_04-00.md) |
 
 ## 📝 פורמט סטנדרטי לדוח
 

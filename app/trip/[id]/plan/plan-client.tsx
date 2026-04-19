@@ -3,34 +3,95 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Calendar, ChevronLeft, Check, Plus, Clock, MapPin } from "lucide-react";
+import { ArrowRight, Sparkles, Calendar, ChevronLeft, Check, Plus, Clock, MapPin, History, RotateCcw, Phone, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { PlanWizard } from "@/components/plan/plan-wizard";
 import { createClient } from "@/lib/supabase/client";
-import { CATEGORY_THEME, type AttractionCategory } from "@/lib/destinations";
+import { CATEGORY_THEME, type AttractionCategory, findDestination, buildWazeLink, buildGmapsLink } from "@/lib/destinations";
+import { resolveAttractionImage } from "@/lib/attraction-image";
 import type { Trip, TripDay, DayBooking, PlanItem } from "@/lib/supabase/types";
+
+interface Snapshot {
+  id: string;
+  created_at: string;
+  label: string | null;
+  total_items: number | null;
+}
 
 export function PlanClient({
   trip,
   initialDays,
+  snapshots: initialSnapshots,
 }: {
   trip: Trip;
   initialDays: TripDay[];
+  snapshots?: Snapshot[];
 }) {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [days, setDays] = useState<TripDay[]>(initialDays);
+  const [snapshots, setSnapshots] = useState<Snapshot[]>(initialSnapshots ?? []);
   const [adopting, setAdopting] = useState<string | null>(null);
+  const [restoring, setRestoring] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   const supabase = createClient();
   const hasAnyPlan = days.some((d) => (d.generated_plan ?? []).length > 0);
 
+  // Static catalog lookup for enriching adopted items with lat/lng/image/links
+  const catalog = findDestination(trip.destination, trip.country_code);
+  function enrichFromCatalog(item: PlanItem): Partial<DayBooking> {
+    if (!catalog || !item.attraction_id) return {};
+    const match = catalog.attractions.find(
+      (a) => `${trip.id}-${a.name}` === item.attraction_id || a.name === item.title
+    );
+    if (!match) return {};
+    return {
+      category: match.type,
+      lat: match.lat ?? null,
+      lng: match.lng ?? null,
+      image_url: resolveAttractionImage(match.image, match.type),
+      website_url: match.website ?? null,
+      waze_url: buildWazeLink(match.lat, match.lng, match.address),
+      gmaps_url: buildGmapsLink(match.lat, match.lng, match.address),
+    };
+  }
+
   async function refreshDays() {
-    const { data } = await supabase
-      .from("trip_days")
-      .select("*")
-      .eq("trip_id", trip.id)
-      .order("date", { ascending: true });
-    if (data) setDays(data as TripDay[]);
+    const [daysRes, snapsRes] = await Promise.all([
+      supabase
+        .from("trip_days")
+        .select("*")
+        .eq("trip_id", trip.id)
+        .order("date", { ascending: true }),
+      supabase
+        .from("plan_snapshots")
+        .select("id, created_at, label, total_items")
+        .eq("trip_id", trip.id)
+        .order("created_at", { ascending: false })
+        .limit(10),
+    ]);
+    if (daysRes.data) setDays(daysRes.data as TripDay[]);
+    if (snapsRes.data) setSnapshots(snapsRes.data as Snapshot[]);
+  }
+
+  async function restoreSnapshot(snapshotId: string) {
+    setRestoring(snapshotId);
+    try {
+      const res = await fetch(`/api/trip/${trip.id}/plan/restore`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ snapshot_id: snapshotId }),
+      });
+      if (!res.ok) throw new Error("restore failed");
+      const data = await res.json();
+      toast.success(`שוחזרה תוכנית — ${data.days_restored} ימים`);
+      await refreshDays();
+      setShowHistory(false);
+    } catch {
+      toast.error("שגיאה בשחזור");
+    } finally {
+      setRestoring(null);
+    }
   }
 
   async function adoptItem(day: TripDay, item: PlanItem, itemIdx: number) {
@@ -45,19 +106,20 @@ export function PlanClient({
         toast.info("כבר קיים ברשימת האתרים של היום");
         return;
       }
+      const enriched = enrichFromCatalog(item);
       const newBooking: DayBooking = {
         booking_id: (globalThis.crypto as Crypto).randomUUID(),
         attraction_id: item.attraction_id ?? null,
         attraction_name: item.title,
         name: item.title,
         description: item.description ?? null,
-        image_url: null,
-        category: null,
-        lat: null,
-        lng: null,
-        website_url: null,
-        waze_url: null,
-        gmaps_url: null,
+        image_url: enriched.image_url ?? null,
+        category: enriched.category ?? null,
+        lat: enriched.lat ?? null,
+        lng: enriched.lng ?? null,
+        website_url: enriched.website_url ?? null,
+        waze_url: enriched.waze_url ?? null,
+        gmaps_url: enriched.gmaps_url ?? null,
         time: item.time,
         duration_minutes: item.duration_min ?? null,
         order_index: existing.length,
@@ -92,25 +154,28 @@ export function PlanClient({
     const existingKeys = new Set(existing.map((b) => b.attraction_id ?? b.name));
     const toAdd: DayBooking[] = attractions
       .filter((a) => !existingKeys.has(a.attraction_id ?? a.title))
-      .map((a, i) => ({
-        booking_id: (globalThis.crypto as Crypto).randomUUID(),
-        attraction_id: a.attraction_id ?? null,
-        attraction_name: a.title,
-        name: a.title,
-        description: a.description ?? null,
-        image_url: null,
-        category: null,
-        lat: null,
-        lng: null,
-        website_url: null,
-        waze_url: null,
-        gmaps_url: null,
-        time: a.time,
-        duration_minutes: a.duration_min ?? null,
-        order_index: existing.length + i,
-        user_notes: a.notes ?? null,
-        created_at: new Date().toISOString(),
-      }));
+      .map((a, i) => {
+        const enriched = enrichFromCatalog(a);
+        return {
+          booking_id: (globalThis.crypto as Crypto).randomUUID(),
+          attraction_id: a.attraction_id ?? null,
+          attraction_name: a.title,
+          name: a.title,
+          description: a.description ?? null,
+          image_url: enriched.image_url ?? null,
+          category: enriched.category ?? null,
+          lat: enriched.lat ?? null,
+          lng: enriched.lng ?? null,
+          website_url: enriched.website_url ?? null,
+          waze_url: enriched.waze_url ?? null,
+          gmaps_url: enriched.gmaps_url ?? null,
+          time: a.time,
+          duration_minutes: a.duration_min ?? null,
+          order_index: existing.length + i,
+          user_notes: a.notes ?? null,
+          created_at: new Date().toISOString(),
+        };
+      });
     if (toAdd.length === 0) {
       toast.info("כל האטרקציות כבר מאומצות");
       return;
@@ -153,16 +218,69 @@ export function PlanClient({
                 {days.length} ימים · {trip.start_date} → {trip.end_date}
               </p>
             </div>
-            <button
-              onClick={() => setWizardOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-l from-[color:var(--gold-700)] to-[color:var(--gold-500)] text-white font-medium shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all"
-            >
-              <Sparkles size={18} />
-              {hasAnyPlan ? "תכנן מחדש עם AI" : "תכנון טיול עם AI"}
-            </button>
+            <div className="flex items-center gap-2">
+              {snapshots.length > 1 && (
+                <button
+                  onClick={() => setShowHistory((v) => !v)}
+                  className="inline-flex items-center gap-1 px-3 py-2.5 rounded-xl border border-[color:var(--gold-500)]/30 text-[color:var(--gold-100)] text-sm hover:bg-[color:var(--gold-500)]/10 transition"
+                  title="היסטוריית תוכניות"
+                >
+                  <History size={14} />
+                  <span className="hidden md:inline">היסטוריה ({snapshots.length})</span>
+                </button>
+              )}
+              <button
+                onClick={() => setWizardOpen(true)}
+                className="inline-flex items-center gap-2 px-4 md:px-5 py-3 rounded-2xl bg-gradient-to-l from-[color:var(--gold-700)] to-[color:var(--gold-500)] text-white font-medium shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all"
+              >
+                <Sparkles size={18} />
+                {hasAnyPlan ? "תכנן מחדש" : "תכנון טיול עם AI"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* History panel */}
+      {showHistory && snapshots.length > 0 && (
+        <div className="max-w-5xl mx-auto px-4 md:px-8 mb-2">
+          <div className="rounded-2xl border border-[color:var(--gold-500)]/20 bg-[color:var(--card)] p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 text-sm text-[color:var(--gold-100)]">
+                <History size={14} />
+                תוכניות קודמות
+              </div>
+              <button onClick={() => setShowHistory(false)} className="text-xs text-foreground/50 hover:text-foreground/80">
+                סגור
+              </button>
+            </div>
+            <ul className="space-y-1">
+              {snapshots.map((s) => (
+                <li key={s.id} className="flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-white/5 text-xs">
+                  <div className="min-w-0">
+                    <div className="text-[color:var(--gold-100)]">{s.label ?? "תוכנית"}</div>
+                    <div className="text-foreground/50 text-[10px]">
+                      {new Date(s.created_at).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" })}
+                      {s.total_items ? ` · ${s.total_items} פריטים` : ""}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => restoreSnapshot(s.id)}
+                    disabled={restoring === s.id}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[color:var(--gold-600)]/20 text-[color:var(--gold-100)] text-[11px] hover:bg-[color:var(--gold-600)]/30 transition disabled:opacity-50"
+                  >
+                    <RotateCcw size={11} />
+                    {restoring === s.id ? "משחזר..." : "שחזר"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="text-[10px] text-foreground/50 mt-2 px-2">
+              שחזור לא פוגע בפריטים שכבר אימצת — רק מחליף את ה-"הצעות" של ה-AI.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Day cards */}
       <div className="max-w-5xl mx-auto px-4 md:px-8 py-6 space-y-4">
@@ -338,21 +456,57 @@ function PlanItemRow({
           <div className="text-xs text-foreground/70 mt-0.5 line-clamp-2">{item.description}</div>
         )}
         {item.vendor?.name && (
-          <div className="mt-2 p-2 rounded-lg bg-[color:var(--gold-900)]/20 border border-[color:var(--gold-500)]/15 text-[11px]">
-            <div className="flex items-center gap-1.5 text-[color:var(--gold-200)]">
+          <div className={`mt-2 p-2 rounded-lg border text-[11px] ${
+            item.verified
+              ? "bg-[color:var(--olive-500)]/10 border-[color:var(--olive-500)]/30"
+              : "bg-[color:var(--gold-900)]/20 border-[color:var(--gold-500)]/15"
+          }`}>
+            <div className="flex items-center gap-1.5 text-[color:var(--gold-200)] flex-wrap">
               <MapPin size={10} />
               <span className="font-medium">{item.vendor.name}</span>
-              {!item.verified && (
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 mr-auto">
+              {item.verified ? (
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-[color:var(--olive-500)]/30 text-[color:var(--olive-200)]">
+                  ✓ מאומת
+                </span>
+              ) : (
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300">
                   לא מאומת — אמת לפני הזמנה
                 </span>
               )}
             </div>
-            {item.vendor.phone && (
-              <a href={`tel:${item.vendor.phone}`} className="block text-foreground/70 mt-0.5">
-                📞 {item.vendor.phone}
-              </a>
+            {item.vendor.notes && (
+              <div className="text-foreground/70 mt-1 text-[10px]">{item.vendor.notes}</div>
             )}
+            <div className="flex items-center gap-2 mt-1.5">
+              {item.vendor.phone && (
+                <a
+                  href={`tel:${item.vendor.phone}`}
+                  className="inline-flex items-center gap-1 text-foreground/80 hover:text-[color:var(--gold-100)]"
+                >
+                  <Phone size={10} /> {item.vendor.phone}
+                </a>
+              )}
+              {item.vendor.whatsapp && (
+                <a
+                  href={`https://wa.me/${item.vendor.whatsapp.replace(/[^0-9]/g, "")}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-foreground/80 hover:text-[color:var(--gold-100)]"
+                >
+                  <MessageCircle size={10} /> WhatsApp
+                </a>
+              )}
+              {item.vendor.maps_url && (
+                <a
+                  href={item.vendor.maps_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-foreground/80 hover:text-[color:var(--gold-100)]"
+                >
+                  <MapPin size={10} /> מפה
+                </a>
+              )}
+            </div>
           </div>
         )}
       </div>

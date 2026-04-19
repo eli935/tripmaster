@@ -22,15 +22,34 @@ export const maxDuration = 60;
 
 const MODEL = "claude-haiku-4-5-20251001";
 
-const SYSTEM_PROMPT = `אתה מתכנן טיולים מקצועי למשפחות ישראליות דתיות. חובה:
+const SYSTEM_PROMPT = `אתה מתכנן טיולים מקצועי למשפחות ישראליות דתיות.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+‼️ כללי ברזל — חובה להקפיד עליהם ללא יוצא מן הכלל:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚫 איסור הפצת מידע קשר מומצא:
+לעולם אל תכתוב מספרי טלפון, מספרי וואטסאפ, כתובות מייל, קישורים לאתרים או כתובות גיאוגרפיות ספציפיות — גם אם המשתמש שואל במפורש.
+גם אם אתה "די בטוח" שאתה מכיר את המספר — אל תכתוב אותו.
+אם יש צורך להתייחס לספק — כתוב רק את שם העסק ותיאור כללי, בלי פרטי קשר.
+כל מספר או כתובת שתכתוב יחשב Hallucination וייחסם אוטומטית.
+
+🕯️ כללי שבת וחג (ימים בסטטוס shabbat/chag/shabbat_chol_hamoed):
+- אסור בהחלט: רכב, מונית, אוטובוס, רכבת, טיסה, נסיעות מכל סוג.
+- אסור: פעילויות בתשלום, קניות, מסעדות שאינן כשרות.
+- מותר: הליכה לבית הכנסת, פעילויות חוץ בקרבת המלון, סעודות (seuda_1/2/3) במלון או בדירה.
+- אם יום שבת/חג, הצע רק items מסוג meal או rest או attraction שניתן להגיע אליהם בהליכה (מ-religious_compatible=true בלבד).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+פורמט:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 1. החזר JSON בלבד (ללא markdown, ללא טקסט לפני/אחרי).
-2. לעולם אל תמציא מספרי טלפון, וואטסאפ או כתובות ספציפיות — רק מידע שקיים ב-catalog שאני מוסר לך.
-3. עבור ימים בסטטוס shabbat או chag: אסור רכב/נסיעה, אסור עסקאות, הצע פעילויות בהליכה בלבד ומסעדות/סעודות כשרות בלבד.
-4. התאם את הקצב להעדפת המשתמש (slow/balanced/packed): slow=3-4 פריטים ליום, balanced=5-6, packed=7-8.
-5. בחר אטרקציות מ-catalog לפי interests של המשתמש. אם אין התאמה — אל תמציא, הצע "בילוי חופשי" עם notes.
-6. ארוחות: breakfast, lunch, dinner (ובשבת גם seuda_1/2/3) עם שעות הגיוניות + התאמה למדיניות meals (restaurant/self_cooking/mixed).
-7. כלול זמן נסיעה בין פריטים כ-travel items עם duration_min.
-8. כל item עם attraction_id רק אם הוא בקטלוג; אחרת null.`;
+2. התאם קצב להעדפת המשתמש: slow=3-4 פריטים ליום, balanced=5-6, packed=7-8.
+3. בחר אטרקציות מ-catalog לפי interests של המשתמש. אם אין התאמה — אל תמציא, הצע "בילוי חופשי" עם notes.
+4. ארוחות: breakfast, lunch, dinner (ובשבת גם seuda_1/2/3) עם שעות הגיוניות + התאמה למדיניות meals (restaurant/self_cooking/mixed).
+5. כלול זמן נסיעה בין פריטים כ-travel items עם duration_min — *רק בימי חול*.
+6. כל item עם attraction_id רק אם הוא קיים בקטלוג שמסרתי; אחרת attraction_id=null.
+7. description: תיאור קצר (עד 2 משפטים) למה הפריט מתאים — בלי פרטי קשר.`;
 
 interface RequestBody {
   preferences: {
@@ -165,8 +184,117 @@ ${JSON.stringify(catalog, null, 2)}
     );
   }
 
-  // Persist each day's plan
-  const updates = plan.days.map(async (d) => {
+  // ═══════════════════════════════════════════════════════════════════
+  // GUARDRAIL ENFORCEMENT (server-side) — trust but verify the LLM
+  // ═══════════════════════════════════════════════════════════════════
+  // Build quick lookup for day_type per day
+  const dayTypeById = new Map<string, string>();
+  for (const d of days) dayTypeById.set(d.id, d.day_type);
+
+  // Regex: international phone numbers, Israeli formats, WhatsApp-style
+  // (digits with + prefix, parens, dashes, spaces — 7+ digits total).
+  const phoneLike = /(\+\d[\d\-\s()]{6,}|\b0\d[\d\-]{7,}\b|\bwhatsapp[^\n]*\d)/gi;
+  // Vehicle-related Hebrew words — blocked on Shabbat/Chag
+  const carWordsRe = /\b(רכב|מונית|מוניות|נסיעה|נסיעות|אוטובוס|רכבת|מטוס|טיסה)\b/;
+  const isReligiousDay = (t: string | undefined) =>
+    t === "shabbat" || t === "chag" || t === "shabbat_chol_hamoed";
+
+  let violationsStripped = 0;
+  let carsRemovedOnShabbat = 0;
+
+  const sanitizedDays = plan.days.map((d) => {
+    const religious = isReligiousDay(dayTypeById.get(d.day_id));
+    const items = d.items
+      .filter((it) => {
+        // Block car/taxi/travel items on Shabbat/Chag entirely
+        if (!religious) return true;
+        const hay = `${it.title} ${it.description ?? ""} ${it.notes ?? ""}`;
+        if (it.type === "travel" && carWordsRe.test(hay)) {
+          carsRemovedOnShabbat++;
+          return false;
+        }
+        if (carWordsRe.test(hay)) {
+          carsRemovedOnShabbat++;
+          return false;
+        }
+        return true;
+      })
+      .map((it) => {
+        // Strip any phone-number-like strings from description/notes/title —
+        // until we have a verified vendors DB, NO contact details are allowed
+        // to reach the user. This enforces the "don't fabricate phones" rule.
+        const strip = (s: string | null | undefined) => {
+          if (!s) return s;
+          const before = s;
+          const after = s.replace(phoneLike, "[הוסר — לא מאומת]");
+          if (before !== after) violationsStripped++;
+          return after;
+        };
+        return {
+          ...it,
+          title: strip(it.title) ?? it.title,
+          description: strip(it.description),
+          notes: strip(it.notes),
+        };
+      });
+    return { ...d, items };
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // VENDOR ENRICHMENT — match items to verified vendors in DB
+  // (No second Claude call needed; pure DB join. AI never sees vendor phones.)
+  // ═══════════════════════════════════════════════════════════════════
+  const { data: vendorRows } = await supabase
+    .from("vendors")
+    .select("*")
+    .eq("country_code", trip.country_code);
+  const vendors = vendorRows ?? [];
+
+  function matchVendor(item: { type: string; title: string }) {
+    // Match by type → vendor_type + title similarity (simple substring check)
+    const vendorTypes: Record<string, string[]> = {
+      meal: ["restaurant", "kosher_store", "chabad"],
+      attraction: ["activity", "tour", "guide"],
+    };
+    const allowed = vendorTypes[item.type];
+    if (!allowed) return null;
+    const candidates = vendors.filter((v) => allowed.includes(v.vendor_type));
+    // Exact-ish match by name overlap
+    const titleLower = item.title.toLowerCase();
+    return (
+      candidates.find((v) => {
+        const n = (v.name || "").toLowerCase();
+        const ne = (v.name_en || "").toLowerCase();
+        return (
+          (n && titleLower.includes(n.slice(0, 8))) ||
+          (ne && titleLower.includes(ne.slice(0, 8))) ||
+          (n && n.includes(titleLower.slice(0, 8)))
+        );
+      }) ?? null
+    );
+  }
+
+  const enrichedDays = sanitizedDays.map((d) => ({
+    ...d,
+    items: d.items.map((it) => {
+      const v = matchVendor(it);
+      if (!v) return it;
+      return {
+        ...it,
+        vendor: {
+          name: v.name as string,
+          phone: (v.phone as string | null) ?? undefined,
+          whatsapp: (v.whatsapp as string | null) ?? undefined,
+          maps_url: (v.maps_url as string | null) ?? undefined,
+          notes: (v.notes as string | null) ?? undefined,
+        },
+        verified: Boolean(v.verified),
+      };
+    }),
+  }));
+
+  // Persist each day's sanitized+enriched plan
+  const updates = enrichedDays.map(async (d) => {
     await supabase
       .from("trip_days")
       .update({ generated_plan: d.items })
@@ -175,9 +303,42 @@ ${JSON.stringify(catalog, null, 2)}
   });
   await Promise.all(updates);
 
+  // Save snapshot for undo/history (Phase 3)
+  const totalItems = enrichedDays.reduce((acc, d) => acc + d.items.length, 0);
+  try {
+    // Count existing snapshots to auto-label ("ריצה #N")
+    const { count } = await supabase
+      .from("plan_snapshots")
+      .select("id", { count: "exact", head: true })
+      .eq("trip_id", tripId);
+    const runNumber = (count ?? 0) + 1;
+    await supabase.from("plan_snapshots").insert({
+      trip_id: tripId,
+      created_by: user.id,
+      preferences: preferencesWithTimestamp,
+      days_payload: enrichedDays,
+      label: `ריצה #${runNumber}`,
+      total_items: totalItems,
+    });
+  } catch (snapErr) {
+    console.warn("[plan/generate] snapshot save failed (non-fatal)", snapErr);
+  }
+
+  if (violationsStripped > 0 || carsRemovedOnShabbat > 0) {
+    console.warn("[plan/generate] guardrail violations", {
+      tripId,
+      violationsStripped,
+      carsRemovedOnShabbat,
+    });
+  }
+
   return NextResponse.json({
     ok: true,
-    days_generated: plan.days.length,
-    total_items: plan.days.reduce((acc, d) => acc + d.items.length, 0),
+    days_generated: enrichedDays.length,
+    total_items: totalItems,
+    guardrails: {
+      phones_stripped: violationsStripped,
+      shabbat_vehicles_blocked: carsRemovedOnShabbat,
+    },
   });
 }
