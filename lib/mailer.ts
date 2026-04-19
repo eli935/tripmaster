@@ -123,3 +123,94 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+
+interface LeadNotificationArgs {
+  name: string;
+  email: string;
+  phone?: string;
+  destination: string;
+  travelDates?: string;
+  adults: number;
+  children: number;
+  message?: string;
+  locale?: string;
+}
+
+export async function sendLeadNotificationEmail(
+  args: LeadNotificationArgs
+): Promise<
+  | { ok: true }
+  | { ok: false; skipped: true; reason: string }
+  | { ok: false; skipped: false; error: string }
+> {
+  const transport = createTransport();
+  if (!transport) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: "GMAIL_USER / GMAIL_APP_PASSWORD not configured",
+    };
+  }
+  const adminEmail = process.env.GMAIL_USER!;
+  const rows = [
+    ["שם", args.name],
+    ["אימייל", args.email],
+    ["טלפון", args.phone ?? "—"],
+    ["יעד", args.destination],
+    ["תאריכי טיול", args.travelDates ?? "—"],
+    ["מבוגרים", String(args.adults)],
+    ["ילדים", String(args.children)],
+    ["שפה", args.locale === "en" ? "English" : "עברית"],
+    ["הודעה", args.message ?? "—"],
+  ];
+  const html = `
+  <!DOCTYPE html>
+  <html lang="he" dir="rtl">
+    <head><meta charset="UTF-8" /></head>
+    <body style="margin:0;padding:0;background:#0f0f10;font-family:'Frank Ruhl Libre','David',serif;color:#f2efe7;">
+      <div style="max-width:560px;margin:0 auto;padding:40px 24px;">
+        <div style="background:linear-gradient(135deg,#F4E4BC 0%,#D4A960 50%,#8B6F3A 100%);border-radius:24px;padding:32px 28px;text-align:center;color:#1a1206;margin-bottom:24px;">
+          <h1 style="margin:0;font-size:28px;font-weight:900;">🎯 ליד חדש</h1>
+          <p style="margin:6px 0 0;font-size:13px;opacity:0.85;">TripMaster · דף נחיתה</p>
+        </div>
+        <table style="width:100%;border-collapse:collapse;background:#1a1a1c;border-radius:12px;overflow:hidden;">
+          ${rows
+            .map(
+              ([k, v]) => `
+            <tr>
+              <td style="padding:10px 16px;font-size:12px;color:#a8a293;width:110px;border-bottom:1px solid #2a2a2d;">${escapeHtml(
+                k
+              )}</td>
+              <td style="padding:10px 16px;font-size:14px;color:#f2efe7;border-bottom:1px solid #2a2a2d;">${escapeHtml(
+                v
+              )}</td>
+            </tr>`
+            )
+            .join("")}
+        </table>
+        <div style="margin-top:20px;text-align:center;">
+          <a href="mailto:${encodeURIComponent(args.email)}" style="display:inline-block;background:#D4A960;color:#1a1206;text-decoration:none;padding:10px 24px;border-radius:999px;font-weight:600;font-size:14px;margin:4px;">השב במייל</a>
+          ${
+            args.phone
+              ? `<a href="tel:${encodeURIComponent(args.phone)}" style="display:inline-block;background:#2a2a2d;color:#f2efe7;text-decoration:none;padding:10px 24px;border-radius:999px;font-weight:600;font-size:14px;margin:4px;">התקשר</a>
+          <a href="https://wa.me/${args.phone.replace(/[^0-9]/g, "")}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:10px 24px;border-radius:999px;font-weight:600;font-size:14px;margin:4px;">WhatsApp</a>`
+              : ""
+          }
+        </div>
+      </div>
+    </body>
+  </html>`;
+
+  try {
+    await transport.sendMail({
+      from: `"TripMaster Leads" <${adminEmail}>`,
+      to: adminEmail,
+      replyTo: args.email,
+      subject: `🎯 ליד חדש — ${args.name} · ${args.destination}`,
+      html,
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, skipped: false, error: (e as Error)?.message || "send_failed" };
+  }
+}

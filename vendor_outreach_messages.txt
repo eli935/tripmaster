@@ -1,0 +1,290 @@
+═══════════════════════════════════════════════════════════════════
+TripMaster — הודעות שיווק לספקים בחו"ל
+גרסה: v1.0 · תאריך: 2026-04-19
+═══════════════════════════════════════════════════════════════════
+
+להחליף לפני שליחה:
+  [Name]/[שם]          = שם איש הקשר
+  [City]/[עיר]         = רומא / אתונה / Kotor / Budva
+  [Your Business]/[שם העסק]  = שם העסק הספציפי
+
+
+═══════════════════════════════════════════════════════════════════
+1) וואטסאפ / DM קצר — אנגלית
+═══════════════════════════════════════════════════════════════════
+
+Hi [Name],
+
+I'm Eli from TripMaster — a trip planning app for Israeli
+families traveling abroad, with special focus on Orthodox/Jewish
+families who value kosher, Shabbat and Chabad-friendly travel.
+
+We're building a curated directory of trusted local partners in
+[City] and [Your Business] came up in our research. We'd love to
+feature you — free of charge — as a verified recommendation when
+our users plan their trip.
+
+How it works for you:
+• Your business appears directly inside the traveler's daily
+  itinerary (not as an ad — as a recommendation)
+• Our AI suggests your service to families whose interests match
+• Users see your name, website, and contact details — with a
+  "Verified by TripMaster" badge
+• Zero cost. No commission unless we both agree on a paid
+  partnership later.
+
+Could you share:
+1. Official phone / WhatsApp number
+2. Website
+3. Opening hours
+4. A short line about what makes your place special for
+   Jewish/family visitors
+
+Reply here and I'll add you to the verified list today.
+
+Thanks,
+Eli Rosenfeld — TripMaster
+https://tripmaster-seven.vercel.app
+
+
+═══════════════════════════════════════════════════════════════════
+2) מייל מלא — אנגלית
+═══════════════════════════════════════════════════════════════════
+
+Subject: Partnership opportunity — featured listing on TripMaster (free)
+
+Dear [Vendor Name],
+
+My name is Eli Rosenfeld and I'm the founder of TripMaster
+(https://tripmaster-seven.vercel.app), a Hebrew-language
+trip-planning platform for Israeli families traveling abroad.
+We specialize in serving the Orthodox Jewish community —
+families who take 1-3 international trips per year and spend
+significantly on each trip because they plan carefully around
+Shabbat, kosher food, and Chabad-compatible logistics.
+
+
+WHAT TRIPMASTER DOES FOR TRAVELERS
+
+When an Israeli family plans a trip to [City], our platform:
+
+1. Builds a day-by-day itinerary that respects the Hebrew
+   calendar — Shabbat is auto-marked as a no-driving day,
+   holidays are detected, and prayer times (zmanim) are
+   calculated for the destination.
+
+2. Suggests attractions, restaurants, and tours matched to the
+   family's interests (nature / history / family activities /
+   religious sites) via an AI planning wizard.
+
+3. Provides an interactive map showing the hotel, attractions,
+   Chabad houses, and kosher restaurants in a single view.
+
+4. Links directly to vendors — travelers tap a contact card and
+   call, WhatsApp, or navigate to your business right from the
+   app.
+
+A typical TripMaster family visits 4-7 attractions per trip and
+spends €1,500-5,000 on activities and dining during a single
+trip. They're planners, not impulse buyers — meaning when they
+see a vendor card, they often book in advance.
+
+
+HOW WE PROMOTE OUR VENDOR PARTNERS
+
+We are building a curated directory of trusted local partners,
+not a paid ad platform. Partners we feature appear as
+recommendations inside the daily plan, not as banners.
+Specifically:
+
+• Your business shows up in the AI-generated plan whenever our
+  algorithm matches your category + location to the traveler's
+  stated interests.
+• Your listing includes name, website, WhatsApp, phone, map pin,
+  and a short description — with a "Verified by TripMaster"
+  badge so travelers trust the recommendation.
+• Travelers see your info before they leave home (during
+  planning) and again at the destination (day-of navigation).
+• We never fabricate contact info. Our policy: nothing goes into
+  the directory unless the business owner confirms it.
+
+
+WHAT WE ASK FROM YOU — TAKES 3 MINUTES
+
+No paperwork, no contract, no upfront cost. Just a quick
+confirmation:
+
+1. Official phone and WhatsApp (we'll only display what you
+   authorize)
+2. Website URL
+3. Typical opening hours
+4. Any special offerings for Jewish families (kosher options,
+   Hebrew-speaking staff, Shabbat-friendly timing, family
+   discounts, etc.)
+5. Best photo for the listing (optional)
+
+
+WHY WE'RE REACHING OUT NOW
+
+TripMaster is growing in the Israeli market, and we're filling
+the verified-vendor directory for [City] before our Pesach /
+Sukkot planning surge. Early partners get:
+
+• A permanent "Verified" badge (which means higher placement in
+  the AI matches)
+• First-priority visibility on our most popular planning days
+• Direct feedback channel if something in the listing needs to
+  change
+
+Reply to this email with the details above and I'll add you to
+the verified directory this week. Happy to jump on a quick call
+if you prefer.
+
+Thank you for considering the partnership.
+
+Warm regards,
+Eli Rosenfeld
+Founder, TripMaster
+eli@biglog.co.il
+https://tripmaster-seven.vercel.app
+
+
+═══════════════════════════════════════════════════════════════════
+3) מייל מלא — עברית (לשליחי חב"ד ולספקים דוברי עברית)
+═══════════════════════════════════════════════════════════════════
+
+נושא: שיתוף פעולה — הצגה חינמית בכלי תכנון טיולים למשפחות דתיות
+
+שלום [שם],
+
+אני אלי רוזנפלד, מייסד TripMaster
+(https://tripmaster-seven.vercel.app) — אפליקציית תכנון טיולים
+למשפחות ישראליות בחו"ל, עם דגש על הקהילה הדתית-חרדית. אנחנו
+בונים מאגר של שותפים מקומיים מוכחים בכל יעד, ואני רוצה לבדוק
+שיתוף פעולה איתך / עם [שם העסק / בית חב"ד].
+
+
+מה TripMaster עושה למשפחה שמתכננת אליך
+
+משפחה ישראלית שמתכננת טיול ל-[עיר] מקבלת אצלנו:
+
+1. לוח זמנים יומי שמכיר את הלוח העברי — שבת מסומנת אוטומטית
+   כיום ללא נסיעה, חגים מזוהים, וזמני תפילה / שקיעה מחושבים
+   לפי היעד.
+
+2. תכנון AI חכם שמציע אטרקציות, מסעדות כשרות ובתי חב"ד לפי
+   תחומי העניין של המשפחה ומבנה הטיול.
+
+3. מפה אינטראקטיבית שמציגה את המלון, האתרים, בית חב"ד
+   והמסעדות בתצוגה אחת.
+
+4. קישור ישיר לספקים — המשתמש לוחץ על כרטיס ומתקשר, שולח
+   וואטסאפ או מנווט ב-Waze / Google Maps ישר אל העסק שלך.
+
+בממוצע, משפחה ב-TripMaster מבקרת 4-7 אטרקציות במהלך טיול
+ומוציאה €1,500-5,000 על פעילויות ואוכל. זה קהל מתכנן ומבושל,
+לא אימפולסיבי — ולרוב מזמין מראש.
+
+
+איך אנחנו מקדמים שותפים
+
+אנחנו לא פלטפורמת פרסום בתשלום. מאגר הספקים המאומתים שלנו הוא
+המלצה אמיתית בתוך סדר היום של המטייל:
+
+• ה-AI שלנו מציע אותך אוטומטית כאשר הקטגוריה שלך + המיקום +
+  תחומי העניין של המטייל תואמים.
+
+• הכרטיס שלך יכלול: שם, אתר, וואטסאפ, טלפון, סיכה על המפה,
+  ותיאור קצר — עם תג "מאומת ע"י TripMaster" שמעלה את האמון של
+  המשתמש.
+
+• המטיילים רואים אותך פעמיים: בשלב התכנון בארץ, ובזמן הטיול
+  במקום.
+
+• לעולם לא ממציאים פרטי קשר. רק מה שאתה מאשר בעצמך מוצג
+  למטיילים.
+
+
+מה אני מבקש ממך — 3 דקות
+
+בלי חוזה, בלי תשלום, בלי ביורוקרטיה. רק עדכון קצר:
+
+1. טלפון ו-וואטסאפ רשמיים (רק מה שתאשר מפורסם)
+2. אתר / דף פייסבוק אם יש
+3. שעות פעילות אופייניות
+4. מה מיוחד אצלך למשפחה דתית / יהודית? (מנייני תפילה, ארוחות
+   שבת, עירוב, דיבור עברית, הנחות למשפחות, סיוע בעברית)
+5. תמונה יפה לכרטיס (רשות)
+
+
+למה עכשיו
+
+TripMaster בצמיחה בשוק הישראלי ואנחנו משלימים את מאגר הספקים
+המאומתים ב-[עיר] לקראת פסח וסוכות הקרובים. שותפים מוקדמים
+מקבלים:
+
+• תג "מאומת" קבוע (שמעלה את הסיכוי להופיע בתכנון AI)
+• קדימות ביום התכנון
+• ערוץ ישיר אליי לכל שינוי / עדכון בכרטיס
+
+תשיב במייל הזה עם הפרטים ואני מוסיף אותך למאגר המאומת השבוע.
+אם עדיף טלפון / וואטסאפ — ציין ואתקשר.
+
+תודה רבה,
+אלי רוזנפלד
+מייסד, TripMaster
+eli@biglog.co.il
+https://tripmaster-seven.vercel.app
+
+
+═══════════════════════════════════════════════════════════════════
+4) וואטסאפ קצר — עברית לשליחי חב"ד
+═══════════════════════════════════════════════════════════════════
+
+שלום הרב [שם],
+
+אלי רוזנפלד כאן, מייסד TripMaster — אפליקציה לתכנון טיולים
+למשפחות דתיות מישראל.
+
+בונים מאגר של בתי חב"ד מאומתים שמופיעים בתוך סדר היום של כל
+משפחה שמתכננת טיול ל-[עיר]. המשפחות שלנו מתכננות פסח / סוכות /
+בין הזמנים, ורוצות למצוא בית חב"ד בקלות עם כל המידע: טלפון,
+וואטסאפ, כתובת, שעות תפילה.
+
+בלי תשלום, בלי חוזה — סתם לשלוח לי:
+
+1. טלפון / וואטסאפ רשמי של הבית
+2. כתובת + אתר
+3. שעות תפילה ואיפה מקבלים אורחים
+4. מה מיוחד אצלכם (סעודת שבת בתשלום? לינה? עירוב?)
+
+ואני מוסיף אתכם למאגר השבוע עם תג "מאומת".
+
+תודה! 🙏
+https://tripmaster-seven.vercel.app
+
+
+═══════════════════════════════════════════════════════════════════
+5) Follow-up אם אין תשובה תוך 5 ימים
+═══════════════════════════════════════════════════════════════════
+
+-- אנגלית --
+Just following up on the partnership message — happy to keep it
+simple, only need the 5 details. Thanks!
+
+-- עברית --
+מעקב קצר על ההודעה הקודמת — שמח לשמור על זה פשוט, רק צריך את
+5 הפרטים. תודה!
+
+
+═══════════════════════════════════════════════════════════════════
+מה לעשות כשהספק עונה
+═══════════════════════════════════════════════════════════════════
+
+1. Supabase Dashboard → Tables → vendors → השורה של הספק
+2. verified = true
+3. למלא phone, whatsapp, website, hours לפי מה ששלח
+4. verified_by = 'eli'
+5. trusted_since = התאריך של היום
+
+═══════════════════════════════════════════════════════════════════

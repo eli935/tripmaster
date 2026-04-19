@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { LandingPage } from "./landing-page";
 
 export default async function Home() {
   const supabase = await createServerSupabase();
@@ -7,7 +8,6 @@ export default async function Home() {
 
   if (user) {
     redirect("/dashboard");
-  } else {
-    redirect("/login");
   }
+  return <LandingPage />;
 }

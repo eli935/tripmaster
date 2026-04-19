@@ -42,6 +42,7 @@ export function PlanWizard({
     budget_per_day: initialPreferences?.budget_per_day,
   });
   const [generating, setGenerating] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const totalSteps = 5;
 
@@ -63,6 +64,7 @@ export function PlanWizard({
 
   async function handleGenerate() {
     setGenerating(true);
+    setErrorMsg(null);
     try {
       const res = await fetch(`/api/trip/${tripId}/plan/generate`, {
         method: "POST",
@@ -77,7 +79,7 @@ export function PlanWizard({
       toast.success(`נוצרה תוכנית ל-${data.days_generated} ימים · ${data.total_items} פריטים`);
       onGenerated();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שגיאה ביצירת התוכנית");
+      setErrorMsg(err instanceof Error ? err.message : "שגיאה ביצירת התוכנית");
     } finally {
       setGenerating(false);
     }
@@ -335,6 +337,18 @@ export function PlanWizard({
         </div>
 
         {/* Footer */}
+        {errorMsg && (
+          <div className="mx-6 mb-3 rounded-xl border border-red-500/40 bg-red-500/10 p-3">
+            <div className="text-sm text-red-300 font-medium mb-1">שגיאה ביצירת התוכנית</div>
+            <div className="text-xs text-red-200/80 mb-2">{errorMsg}</div>
+            <button
+              onClick={handleGenerate}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-200 text-xs font-medium hover:bg-red-500/30 transition"
+            >
+              <Sparkles size={12} /> נסה שוב
+            </button>
+          </div>
+        )}
         <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between">
           <button
             onClick={() => setStep((s) => Math.max(1, s - 1))}

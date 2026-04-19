@@ -1,0 +1,337 @@
+═══════════════════════════════════════════════════════════════════
+TripMaster — הודעות שיווק לשותפים עסקיים בתשלום
+גרסה: v1.0 · תאריך: 2026-04-19
+עמלה מוצעת: 30% revenue share על הזמנות שיוחסו ל-TripMaster
+═══════════════════════════════════════════════════════════════════
+
+קהל יעד להודעה הזאת:
+- טור-אופרייטורים עם תקציב שיווק
+- בתי מלון / רשתות מלונות
+- חברות השכרת רכב / סירות
+- מסעדות (לא כשרות דווקא) בערים בחו"ל
+- אטרקציות בתשלום (מוזיאונים פרטיים, פארקי שעשועים, טיולי סירות)
+- מדריכים פרטיים / ספקי חוויות פרימיום
+
+להחליף לפני שליחה:
+  [Name]/[שם]               = שם איש הקשר
+  [City]/[עיר]              = רומא / אתונה / Kotor / וכו'
+  [Your Business]/[שם העסק] = שם העסק הספציפי
+
+
+═══════════════════════════════════════════════════════════════════
+1) וואטסאפ / DM קצר — אנגלית
+═══════════════════════════════════════════════════════════════════
+
+Hi [Name],
+
+I'm Eli, founder of TripMaster — a trip-planning platform used
+by Israeli families traveling abroad. Our users take 2-3
+international trips per year and spend €15,000-80,000 per trip.
+
+I'm reaching out about a performance-based partnership with
+[Your Business]:
+
+• We feature you inside our AI-generated trip plans for [City]
+• Users see your listing at the planning stage AND again on
+  the day of the visit
+• You pay 30% of the booking revenue — only on confirmed
+  bookings attributed to us
+• No upfront cost, no setup fee, no monthly minimum
+
+Our audience:
+— Israeli travelers (high-LTV, 4-7 activities per trip)
+— Family segments (avg 4-8 travelers per booking)
+— Pre-intent: already decided to visit [City] before they see you
+
+Interested? Reply and I'll send a short partnership sheet with
+tracking details.
+
+Eli Rosenfeld — TripMaster
+https://tripmaster-seven.vercel.app
+
+
+═══════════════════════════════════════════════════════════════════
+2) מייל מלא — אנגלית
+═══════════════════════════════════════════════════════════════════
+
+Subject: Performance partnership — Israeli traveler segment for [Your Business]
+
+Dear [Vendor Name],
+
+My name is Eli Rosenfeld and I'm the founder of TripMaster
+(https://tripmaster-seven.vercel.app), a Hebrew-language trip
+planning platform serving the Israeli outbound travel market.
+I'm reaching out with a **performance-based partnership
+proposal** that may fit well with [Your Business].
+
+
+WHO OUR USERS ARE
+
+TripMaster serves Israeli families traveling abroad. Key facts
+about this segment that may matter to your business:
+
+• High travel frequency — 2-3 international trips per year
+  per household, every year
+• High per-trip spend — €15,000-80,000 per family per trip
+  (flights, accommodation, activities, dining)
+• Long planning horizon — most bookings are made 2-6 weeks
+  before travel, giving you predictable lead time
+• Family group bookings — average 4-8 travelers per reservation,
+  higher than the solo / couple market
+• Strong word-of-mouth — Israeli travelers share recommendations
+  extensively within their community, so one happy booking
+  tends to produce repeat referrals
+
+They're **planners, not impulse buyers**. When they see a vendor
+listing inside TripMaster, they typically research, decide, and
+book — often in the same session.
+
+
+HOW TRIPMASTER WORKS
+
+When an Israeli user plans a trip to [City], our platform:
+
+1. Builds a day-by-day itinerary based on their preferences
+   (interests, pace, transport, budget)
+2. Surfaces attractions, restaurants, and activities through an
+   AI-driven recommendation engine
+3. Shows vendor listings with name, contact, map pin, website,
+   and booking link
+4. Routes the user directly to your booking page with a tracked
+   referral parameter
+
+Each recommendation is presented as part of the trusted itinerary
+— not as a banner ad. This dramatically increases intent-to-book
+rates compared to conventional display advertising.
+
+
+THE PARTNERSHIP OFFER
+
+**30% revenue share** on any booking attributed to TripMaster,
+tracked via a unique referral code or UTM parameter we install
+on the outbound link to your site.
+
+Terms in plain English:
+
+• **No upfront cost.** No setup fee, no monthly minimum, no
+  listing fee.
+• **You only pay on confirmed bookings.** If a booking is
+  cancelled or refunded, the commission is reversed.
+• **Payout monthly**, 30 days after the booking is consumed,
+  via wire transfer or PayPal.
+• **Transparent tracking.** You receive a monthly report
+  showing click-through, bookings, and revenue.
+• **Non-exclusive.** You can continue with any other marketing
+  channels you run.
+• **30-day cookie window** from first click to booking.
+
+To illustrate: if 10 Israeli families book activities with you
+through TripMaster in a month, each spending €300, that's
+€3,000 booked → €900 commission to TripMaster, €2,100 net
+revenue you would not have captured otherwise.
+
+
+WHY 30%
+
+It reflects the quality of the traffic. Conventional display
+advertising delivers ~1% booking rate from unqualified clicks;
+TripMaster traffic converts at 15-25% because users arrive at
+your page already in planning mode, often with your service
+already on their itinerary. The net cost per acquisition is
+typically lower than paid search or Instagram ads.
+
+
+WHAT WE NEED TO LAUNCH
+
+1. A **booking URL** that accepts a UTM or affiliate parameter
+2. **Commission confirmation** (30% or proposed alternative)
+3. Your **preferred payment method** (wire / PayPal)
+4. A **billing contact** (name + email)
+5. Once live, access to a **test booking** so we can verify
+   tracking end-to-end
+
+I can send a one-page partnership agreement with the above
+terms for your records, or we can start with a simple email
+confirmation and formalize later — whichever fits your process.
+
+Happy to schedule a 15-minute call if you'd prefer to walk
+through the offer live.
+
+Looking forward to hearing from you.
+
+Best regards,
+Eli Rosenfeld
+Founder, TripMaster
+eli@biglog.co.il
+https://tripmaster-seven.vercel.app
+
+
+═══════════════════════════════════════════════════════════════════
+3) מייל מלא — עברית (לשותפים עסקיים ישראלים / מנהלים דוברי עברית)
+═══════════════════════════════════════════════════════════════════
+
+נושא: שותפות Performance — סגמנט המטיילים הישראלים עבור [שם העסק]
+
+שלום [שם],
+
+שמי אלי רוזנפלד ואני מייסד TripMaster
+(https://tripmaster-seven.vercel.app), פלטפורמת תכנון טיולים
+בעברית שמשרתת את שוק המטיילים היוצאים מישראל. אני פונה בהצעת
+שותפות מבוססת-ביצועים שעשויה להתאים ל-[שם העסק].
+
+
+מי המשתמשים שלנו
+
+TripMaster משרת משפחות ישראליות שמטיילות בחו"ל. עובדות מפתח
+על הסגמנט:
+
+• תדירות טיול גבוהה — 2-3 טיולים בינלאומיים בשנה למשפחה
+• הוצאה גבוהה לטיול — 50,000-300,000 ש"ח למשפחה
+  (טיסות, לינה, פעילויות, אוכל)
+• חלון תכנון ארוך — רוב ההזמנות נעשות 2-6 שבועות לפני היציאה,
+  נותן lead time צפוי
+• הזמנות קבוצתיות — ממוצע 4-8 מטיילים להזמנה, גבוה משמעותית
+  משוק היחידים / הזוגות
+• Word-of-mouth חזק — המטיילים הישראלים משתפים המלצות באופן
+  אינטנסיבי בקהילות, ולכן הזמנה אחת מרוצה נוטה לייצר המלצות
+  חוזרות
+
+הקהל הזה מתכנן, לא אימפולסיבי. כשהוא רואה ספק ב-TripMaster,
+לרוב הוא חוקר, מחליט ומזמין — באותו סשן.
+
+
+איך TripMaster עובד
+
+משתמש ישראלי שמתכנן טיול ל-[עיר] מקבל:
+
+1. תוכנית יומית מבוססת העדפות (תחומי עניין, קצב, תחבורה, תקציב)
+2. המלצות אטרקציות, מסעדות ופעילויות ממנוע AI
+3. כרטיסי ספקים עם שם, פרטי קשר, סיכה על מפה, אתר וקישור
+   להזמנה
+4. הפניה ישירה לאתר ההזמנה שלכם עם פרמטר מעקב
+
+
+הצעת השותפות
+
+30% revenue share על כל הזמנה שמיוחסת ל-TripMaster, במעקב
+דרך קוד הפניה ייחודי או UTM שנתקין בקישור היוצא לאתר שלכם.
+
+תנאים בעברית פשוטה:
+
+• ללא עלות התחלתית. אין דמי הקמה, מינימום חודשי או דמי
+  רישום.
+• תשלום רק על הזמנות שאושרו. ביטול או החזר = ביטול של
+  העמלה.
+• תשלום חודשי, 30 יום אחרי שהשירות ניתן, בהעברה בנקאית
+  או PayPal.
+• מעקב שקוף. אתם מקבלים דוח חודשי עם clicks, bookings
+  ו-revenue.
+• לא בלעדי. אתם יכולים להמשיך עם כל ערוץ שיווק אחר.
+• Cookie של 30 יום מהקליק הראשון עד ההזמנה.
+
+להמחשה: אם 10 משפחות ישראליות מזמינות אצלכם פעילויות בחודש,
+כל אחת בעלות של 1,200 ש"ח, זה 12,000 ש"ח revenue → עמלה
+של 3,600 ש"ח ל-TripMaster, 8,400 ש"ח net שלא הייתם אוספים
+אחרת.
+
+
+למה 30%
+
+זה משקף את איכות התנועה. פרסום display רגיל נותן ~1%
+booking rate מקליקים לא מוסמכים; תנועת TripMaster ממירה
+ב-15-25% כי המשתמש מגיע לדף שלכם כשהוא כבר במצב תכנון,
+ולרוב השירות שלכם כבר בתוכנית היומית שלו. העלות נטו לרכישה
+(CPA) בדרך כלל נמוכה מ-Google Ads או Instagram Ads.
+
+
+מה צריך כדי להתחיל
+
+1. URL של דף ההזמנה שמקבל UTM / affiliate parameter
+2. אישור על העמלה (30% או הצעה חלופית)
+3. אמצעי התשלום המועדף (העברה בנקאית / PayPal / ביט)
+4. איש קשר חשבונאי (שם + מייל)
+5. ברגע שמעלים חי — גישה להזמנת בדיקה כדי לאמת את המעקב
+   end-to-end
+
+אני יכול לשלוח הסכם שותפות בן עמוד אחד עם התנאים הנ"ל לארכיון
+שלכם, או להתחיל באישור במייל ולהסדיר מאוחר יותר — מה שמתאים
+לכם.
+
+שמח לקבוע שיחה של 15 דקות אם תעדיפו לעבור על ההצעה חי.
+
+מחכה לשמוע.
+
+בברכה,
+אלי רוזנפלד
+מייסד, TripMaster
+eli@biglog.co.il
+https://tripmaster-seven.vercel.app
+
+
+═══════════════════════════════════════════════════════════════════
+4) וואטסאפ קצר — עברית
+═══════════════════════════════════════════════════════════════════
+
+שלום [שם],
+
+אני אלי מ-TripMaster — פלטפורמת תכנון טיולים למשפחות ישראליות
+בחו"ל. המשתמשים שלנו מטיילים 2-3 פעמים בשנה ומוציאים
+50,000-300,000 ש"ח לטיול.
+
+אני פונה בנוגע לשותפות מבוססת ביצועים עם [שם העסק]:
+
+• אנחנו מציגים אתכם בתוך תוכנית הטיול של המשתמש ב-[עיר]
+• המשתמש רואה אתכם פעמיים — בתכנון ובזמן הטיול
+• אתם משלמים 30% מההכנסה — רק על הזמנות שאושרו
+• ללא עלות התחלתית, ללא מינימום חודשי
+
+הקהל שלנו:
+— מטיילים ישראלים (LTV גבוה, 4-7 פעילויות לטיול)
+— סגמנט משפחות (ממוצע 4-8 נוסעים להזמנה)
+— Pre-intent: כבר החליטו לנסוע ל-[עיר] לפני שראו אתכם
+
+מעוניין? ענו ואשלח דף שותפות קצר עם פרטי מעקב.
+
+אלי רוזנפלד — TripMaster
+https://tripmaster-seven.vercel.app
+
+
+═══════════════════════════════════════════════════════════════════
+5) Follow-up אם אין תשובה תוך 5 ימים
+═══════════════════════════════════════════════════════════════════
+
+-- אנגלית --
+Quick follow-up on the TripMaster partnership offer — happy to
+simplify further if the 30% terms need tweaking for your
+business. Let me know what would make it a yes.
+
+
+-- עברית --
+מעקב קצר על הצעת השותפות של TripMaster — שמח להתאים את תנאי
+ה-30% אם יש משהו שצריך שינוי עבור העסק שלכם. תגידו מה יהפוך
+את זה ל"כן".
+
+
+═══════════════════════════════════════════════════════════════════
+טיפים ל-outreach
+═══════════════════════════════════════════════════════════════════
+
+• לטור-אופרייטורים גדולים — שלח את המייל המלא (סעיף 2).
+  הם רגילים לפורמט ורוצים לראות מספרים.
+
+• לעסקים קטנים-בינוניים (מסעדה, מדריך פרטי) — WhatsApp קצר
+  (סעיף 1) ראשון. אם יש עניין, אז המייל המלא כמעקב.
+
+• תעדוף: בתי מלון בוטיקיים → טור-אופרייטורים עם נישה משפחתית
+  → השכרת רכב/סירות → אטרקציות פרמיום. מסעדות אחרון כי ממוצע
+  ההזמנה נמוך יחסית.
+
+• אם מישהו מציע לירידה ל-20-25% — שווה להסכים לעסק הראשון
+  מכל קטגוריה (validation > עמלה). אחר כך אפשר לדרוש 30%
+  כשיש case studies.
+
+• לא להבטיח נפח. תגיד "Israeli outbound segment spends
+  €X/trip" — זה fact. אל תגיד "I'll send you 100 bookings
+  per month" — זה לא fact.
+
+═══════════════════════════════════════════════════════════════════

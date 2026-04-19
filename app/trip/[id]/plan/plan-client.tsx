@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Calendar, ChevronLeft, Check, Plus, Clock, MapPin, History, RotateCcw, Phone, MessageCircle } from "lucide-react";
+import { ArrowRight, Sparkles, Calendar, ChevronLeft, Check, Plus, Clock, MapPin, History, RotateCcw, Phone, MessageCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PlanWizard } from "@/components/plan/plan-wizard";
 import { createClient } from "@/lib/supabase/client";
@@ -74,6 +74,20 @@ export function PlanClient({
     if (snapsRes.data) setSnapshots(snapsRes.data as Snapshot[]);
   }
 
+  async function deleteSnapshot(snapshotId: string) {
+    if (!confirm("למחוק את הגרסה הזאת מההיסטוריה?")) return;
+    try {
+      const res = await fetch(`/api/trip/${trip.id}/plan/snapshot/${snapshotId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("delete failed");
+      setSnapshots((prev) => prev.filter((s) => s.id !== snapshotId));
+      toast.success("נמחק");
+    } catch {
+      toast.error("שגיאה במחיקה");
+    }
+  }
+
   async function restoreSnapshot(snapshotId: string) {
     setRestoring(snapshotId);
     try {
@@ -94,9 +108,48 @@ export function PlanClient({
     }
   }
 
+  function inferMealType(time?: string, title?: string): string {
+    const t = (title ?? "").toLowerCase();
+    if (t.includes("בוקר") || t.includes("breakfast")) return "breakfast";
+    if (t.includes("צהריים") || t.includes("lunch")) return "lunch";
+    if (t.includes("ערב") || t.includes("dinner")) return "dinner";
+    if (t.includes("סעודה ראשונה")) return "seuda_1";
+    if (t.includes("סעודה שניה") || t.includes("סעודה שנייה")) return "seuda_2";
+    if (t.includes("סעודה שלישית")) return "seuda_3";
+    // Fallback by time-of-day
+    const hour = parseInt((time ?? "12:00").slice(0, 2), 10);
+    if (hour < 10) return "breakfast";
+    if (hour < 16) return "lunch";
+    return "dinner";
+  }
+
   async function adoptItem(day: TripDay, item: PlanItem, itemIdx: number) {
-    if (item.type !== "attraction") return;
+    if (item.type !== "attraction" && item.type !== "meal") return;
     setAdopting(`${day.id}-${itemIdx}`);
+
+    // ── MEAL BRANCH ──
+    if (item.type === "meal") {
+      try {
+        const mealType = inferMealType(item.time, item.title);
+        const { error } = await supabase.from("meals").insert({
+          trip_day_id: day.id,
+          meal_type: mealType,
+          name: item.title,
+          description: item.description ?? null,
+          time: item.time,
+          servings: 1,
+        });
+        if (error) throw error;
+        toast.success(`"${item.title}" נוספה כארוחה`);
+      } catch {
+        toast.error("שגיאה בהוספת ארוחה");
+      } finally {
+        setAdopting(null);
+      }
+      return;
+    }
+
+    // ── ATTRACTION BRANCH (existing) ──
     try {
       const existing = (day.bookings ?? []) as DayBooking[];
       const dup = existing.some(
@@ -217,6 +270,7 @@ export function PlanClient({
               <p className="text-sm text-foreground/70 mt-2">
                 {days.length} ימים · {trip.start_date} → {trip.end_date}
               </p>
+              <PreferencesSummary prefs={trip.preferences} />
             </div>
             <div className="flex items-center gap-2">
               {snapshots.length > 1 && (
@@ -264,14 +318,23 @@ export function PlanClient({
                       {s.total_items ? ` · ${s.total_items} פריטים` : ""}
                     </div>
                   </div>
-                  <button
-                    onClick={() => restoreSnapshot(s.id)}
-                    disabled={restoring === s.id}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[color:var(--gold-600)]/20 text-[color:var(--gold-100)] text-[11px] hover:bg-[color:var(--gold-600)]/30 transition disabled:opacity-50"
-                  >
-                    <RotateCcw size={11} />
-                    {restoring === s.id ? "משחזר..." : "שחזר"}
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => restoreSnapshot(s.id)}
+                      disabled={restoring === s.id}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[color:var(--gold-600)]/20 text-[color:var(--gold-100)] text-[11px] hover:bg-[color:var(--gold-600)]/30 transition disabled:opacity-50"
+                    >
+                      <RotateCcw size={11} />
+                      {restoring === s.id ? "משחזר..." : "שחזר"}
+                    </button>
+                    <button
+                      onClick={() => deleteSnapshot(s.id)}
+                      className="p-1.5 rounded-lg text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition"
+                      title="מחק גרסה"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -416,6 +479,57 @@ function DayCard({
   );
 }
 
+const PACE_LABEL: Record<string, string> = { slow: "איטי", balanced: "מאוזן", packed: "אינטנסיבי" };
+const TRANSPORT_LABEL: Record<string, string> = {
+  rental_car: "רכב שכור",
+  taxi: "מוניות",
+  walking: "הליכה",
+  mixed: "משולב",
+};
+const MEAL_STYLE_LABEL: Record<string, string> = {
+  restaurant: "מסעדות",
+  self_cooking: "בישול עצמי",
+  mixed: "משולב",
+};
+const INTEREST_LABEL: Record<string, string> = {
+  nature: "טבע",
+  historic: "היסטוריה",
+  beach: "חוף",
+  museum: "מוזיאונים",
+  activity: "פעילות",
+  viewpoint: "תצפיות",
+  religious: "דתי",
+  kids: "ילדים",
+};
+
+function PreferencesSummary({ prefs }: { prefs?: import("@/lib/supabase/types").TripPreferences | null }) {
+  if (!prefs || Object.keys(prefs).length === 0) return null;
+  const chips: string[] = [];
+  if (prefs.pace) chips.push(`קצב: ${PACE_LABEL[prefs.pace] ?? prefs.pace}`);
+  if (prefs.interests && prefs.interests.length > 0) {
+    chips.push(
+      `תחומי עניין: ${prefs.interests.map((i) => INTEREST_LABEL[i] ?? i).slice(0, 3).join(", ")}${prefs.interests.length > 3 ? "+" : ""}`
+    );
+  }
+  if (prefs.transport) chips.push(`תחבורה: ${TRANSPORT_LABEL[prefs.transport] ?? prefs.transport}`);
+  if (prefs.daily_start && prefs.daily_end) chips.push(`${prefs.daily_start}–${prefs.daily_end}`);
+  if (prefs.meals?.style) chips.push(`אוכל: ${MEAL_STYLE_LABEL[prefs.meals.style] ?? prefs.meals.style}`);
+  if (prefs.budget_per_day) chips.push(`₪${prefs.budget_per_day}/יום`);
+  if (chips.length === 0) return null;
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {chips.map((c) => (
+        <span
+          key={c}
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-[color:var(--gold-900)]/30 text-[color:var(--gold-200)] border border-[color:var(--gold-500)]/20"
+        >
+          {c}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function PlanItemRow({
   item,
   adopting,
@@ -510,7 +624,7 @@ function PlanItemRow({
           </div>
         )}
       </div>
-      {item.type === "attraction" && (
+      {(item.type === "attraction" || item.type === "meal") && (
         <button
           onClick={onAdopt}
           disabled={adopting || alreadyAdopted}
