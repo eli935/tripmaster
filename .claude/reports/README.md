@@ -24,7 +24,9 @@ stage-<N>_v<X.Y>_<YYYY-MM-DD>_<HH-MM>.md
 | 6 | ui-designer | ✅ הושלם | 2026-04-17 | 15:04 | [stage-6_v1.0_2026-04-17_15-04.md](stage-6_v1.0_2026-04-17_15-04.md) |
 | 7 | database + destinations | ✅ הושלם | 2026-04-17 | 15:25 | [stage-7_v1.0_2026-04-17_15-25.md](stage-7_v1.0_2026-04-17_15-25.md) |
 | 8 | recommendations-expert (חדש) | ✅ הושלם | 2026-04-17 | 15:30 | [stage-8_v1.0_2026-04-17_15-30.md](stage-8_v1.0_2026-04-17_15-30.md) |
-| 9 (אחרון) | coordinator + user | 📝 מדריך מוכן | 2026-04-17 | 15:35 | [stage-9_v1.0_2026-04-17_15-35.md](stage-9_v1.0_2026-04-17_15-35.md) |
+| 9 | coordinator + user | 📝 מדריך מוכן | 2026-04-17 | 15:35 | [stage-9_v1.0_2026-04-17_15-35.md](stage-9_v1.0_2026-04-17_15-35.md) |
+| 10 | ui-designer + database-expert + destinations-expert | ✅ הושלם — Daily Itinerary v9.1 | 2026-04-19 | 00:00 | [stage-10_v1.0_2026-04-19_00-00.md](stage-10_v1.0_2026-04-19_00-00.md) |
+| 11 | general-purpose (audit+fix) | ✅ הושלם — admin_participates enforcement v9.2 | 2026-04-19 | 00:20 | [stage-11_v1.0_2026-04-19_00-20.md](stage-11_v1.0_2026-04-19_00-20.md) |
 
 ## 📝 פורמט סטנדרטי לדוח
 
