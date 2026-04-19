@@ -23,10 +23,13 @@ export interface Profile {
 export type TripPace = "slow" | "balanced" | "packed";
 export type TripTransport = "rental_car" | "taxi" | "walking" | "mixed";
 export type MealStyle = "restaurant" | "self_cooking" | "mixed";
+export type TripVibe = "adventure" | "sport" | "solid" | "scenic" | "mixed";
 
 export interface TripPreferences {
   pace?: TripPace;
   interests?: string[];
+  vibe?: TripVibe;
+  feeling?: string;
   transport?: TripTransport;
   daily_start?: string;
   daily_end?: string;

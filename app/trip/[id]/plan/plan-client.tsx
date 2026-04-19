@@ -501,11 +501,19 @@ const INTEREST_LABEL: Record<string, string> = {
   religious: "דתי",
   kids: "ילדים",
 };
+const VIBE_LABEL: Record<string, string> = {
+  adventure: "הרפתקני",
+  sport: "ספורטיבי",
+  solid: "סולידי",
+  scenic: "נופים",
+  mixed: "משולב",
+};
 
 function PreferencesSummary({ prefs }: { prefs?: import("@/lib/supabase/types").TripPreferences | null }) {
   if (!prefs || Object.keys(prefs).length === 0) return null;
   const chips: string[] = [];
   if (prefs.pace) chips.push(`קצב: ${PACE_LABEL[prefs.pace] ?? prefs.pace}`);
+  if (prefs.vibe) chips.push(`וייב: ${VIBE_LABEL[prefs.vibe] ?? prefs.vibe}`);
   if (prefs.interests && prefs.interests.length > 0) {
     chips.push(
       `תחומי עניין: ${prefs.interests.map((i) => INTEREST_LABEL[i] ?? i).slice(0, 3).join(", ")}${prefs.interests.length > 3 ? "+" : ""}`

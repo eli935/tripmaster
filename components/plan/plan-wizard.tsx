@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Sparkles, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
-import type { TripPreferences, TripPace, TripTransport, MealStyle } from "@/lib/supabase/types";
+import type { TripPreferences, TripPace, TripTransport, MealStyle, TripVibe } from "@/lib/supabase/types";
 
 const INTEREST_OPTIONS = [
   { id: "nature",    label: "🌳 טבע" },
@@ -18,6 +18,14 @@ const INTEREST_OPTIONS = [
 ];
 
 const CUISINE_OPTIONS = ["איטלקי", "מקומי", "כשר", "צמחוני", "פיצה/פסטה", "ים תיכוני"];
+
+const VIBE_OPTIONS: Array<{ id: TripVibe; label: string; desc: string }> = [
+  { id: "adventure", label: "🏕️ הרפתקני", desc: "חווית אאוטדור, טיפוס, ספורט אתגרי" },
+  { id: "sport", label: "🏃 ספורטיבי", desc: "רכיבה, ריצה, שחייה, מסלולי הליכה" },
+  { id: "solid", label: "☕ סולידי", desc: "קצב רגוע, מסעדות, סיורים קלילים" },
+  { id: "scenic", label: "🌄 נופים", desc: "תצפיות, אגמים, חופים, טבע" },
+  { id: "mixed", label: "🎭 משולב", desc: "קצת מהכל" },
+];
 
 export function PlanWizard({
   tripId,
@@ -34,6 +42,8 @@ export function PlanWizard({
   const [prefs, setPrefs] = useState<TripPreferences>({
     pace: initialPreferences?.pace ?? "balanced",
     interests: initialPreferences?.interests ?? [],
+    vibe: initialPreferences?.vibe ?? "mixed",
+    feeling: initialPreferences?.feeling ?? "",
     transport: initialPreferences?.transport ?? "rental_car",
     daily_start: initialPreferences?.daily_start ?? "09:00",
     daily_end: initialPreferences?.daily_end ?? "20:00",
@@ -44,7 +54,7 @@ export function PlanWizard({
   const [generating, setGenerating] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const totalSteps = 5;
+  const totalSteps = 6;
 
   function toggleInterest(id: string) {
     setPrefs((p) => {
@@ -181,6 +191,44 @@ export function PlanWizard({
               )}
 
               {step === 3 && (
+                <Step title="איך אתם רוצים שהטיול ירגיש?">
+                  <p className="text-xs text-foreground/60 mb-3">בחרו וייב, ואם בא לכם — כתבו לנו במילים שלכם</p>
+                  <div className="space-y-2 mb-4">
+                    {VIBE_OPTIONS.map((v) => (
+                      <button
+                        key={v.id}
+                        onClick={() => setPrefs((p) => ({ ...p, vibe: v.id }))}
+                        className={`w-full rounded-xl p-3 text-start border-2 transition ${
+                          prefs.vibe === v.id
+                            ? "border-[color:var(--gold-500)] bg-[color:var(--gold-500)]/10"
+                            : "border-white/10 hover:border-white/20"
+                        }`}
+                      >
+                        <div className="text-sm font-medium text-[color:var(--gold-100)]">{v.label}</div>
+                        <div className="text-[10px] text-foreground/60 mt-0.5">{v.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                  <div>
+                    <label className="block text-xs text-foreground/70 mb-1.5">
+                      מה אתם רוצים להרגיש בטיול הזה? (רשות)
+                    </label>
+                    <textarea
+                      value={prefs.feeling ?? ""}
+                      onChange={(e) => setPrefs((p) => ({ ...p, feeling: e.target.value }))}
+                      rows={3}
+                      maxLength={500}
+                      placeholder="לדוגמה: חופש מהשגרה, זמן איכות עם הילדים, קצת אתגר, הרבה אוכל טעים..."
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:border-[color:var(--gold-500)]/50"
+                    />
+                    <div className="text-[10px] text-foreground/50 mt-1 text-start">
+                      {(prefs.feeling ?? "").length} / 500
+                    </div>
+                  </div>
+                </Step>
+              )}
+
+              {step === 4 && (
                 <Step title="תחבורה וזמנים">
                   <div className="space-y-4">
                     <div>
@@ -239,7 +287,7 @@ export function PlanWizard({
                 </Step>
               )}
 
-              {step === 4 && (
+              {step === 5 && (
                 <Step title="אוכל">
                   <div className="space-y-4">
                     <div>
@@ -306,7 +354,7 @@ export function PlanWizard({
                 </Step>
               )}
 
-              {step === 5 && (
+              {step === 6 && (
                 <Step title="תקציב יומי למשפחה (אופציונלי)">
                   <p className="text-xs text-foreground/60 mb-3">
                     ה-AI ישקול את זה כשיציע אטרקציות ומסעדות
