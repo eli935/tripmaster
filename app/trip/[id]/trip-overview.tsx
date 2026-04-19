@@ -1015,6 +1015,7 @@ function ExpensesTab({
           open={addOpen}
           onOpenChange={setAddOpen}
           tripId={tripId}
+          trip={trip}
           participants={participants}
           userId={userId}
           isAdmin={isAdmin}

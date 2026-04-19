@@ -2,11 +2,17 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { ArrowRight, ArrowLeft, Sparkles, Flame, MapIcon } from "lucide-react";
 import { Timeline, buildTimeline } from "@/components/itinerary/timeline";
-import { DayMap, type MapPin } from "@/components/itinerary/day-map";
+import type { MapPin } from "@/components/itinerary/day-map";
 import { ExportActions } from "@/components/itinerary/export-actions";
+
+const DayMap = dynamic(
+  () => import("@/components/itinerary/day-map").then((m) => m.DayMap),
+  { ssr: false, loading: () => <div className="w-full h-full bg-[color:var(--gold-900)]/10 animate-pulse rounded-3xl" /> }
+);
 import { CATEGORY_THEME, type AttractionCategory } from "@/lib/destinations";
 import type { Trip, TripDay, DayBooking, Meal } from "@/lib/supabase/types";
 
@@ -53,10 +59,29 @@ export function ItineraryClient({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
 
+  const origin = useMemo(
+    () =>
+      typeof trip.accommodation_lat === "number" && typeof trip.accommodation_lng === "number"
+        ? { lat: trip.accommodation_lat, lng: trip.accommodation_lng, name: trip.accommodation_name || "מקום לינה" }
+        : null,
+    [trip.accommodation_lat, trip.accommodation_lng, trip.accommodation_name]
+  );
+
   const events = useMemo(() => buildTimeline(bookings, meals), [bookings, meals]);
 
   const pins: MapPin[] = useMemo(() => {
     const list: MapPin[] = [];
+    // Accommodation always shows first if present
+    if (origin) {
+      list.push({
+        id: "__accommodation__",
+        lat: origin.lat,
+        lng: origin.lng,
+        color: "#B08B3F",
+        label: `🏨 ${origin.name}`,
+        order: 0,
+      });
+    }
     events.forEach((ev, i) => {
       if (ev.kind === "attraction") {
         const b = ev.booking;
@@ -87,7 +112,7 @@ export function ItineraryClient({
       }
     });
     return list;
-  }, [events]);
+  }, [events, origin]);
 
   const dayIndex = allDays.findIndex((d) => d.id === day.id);
   const prevDay = dayIndex > 0 ? allDays[dayIndex - 1] : null;
@@ -189,6 +214,7 @@ export function ItineraryClient({
               activeId={activeId}
               onHover={setActiveId}
               dayType={day.day_type}
+              origin={origin}
             />
           </div>
 

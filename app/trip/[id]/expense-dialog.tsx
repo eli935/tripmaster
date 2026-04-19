@@ -18,8 +18,9 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Trash2, Users, Calculator, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import type { TripParticipant, ExpenseCategory, SplitType } from "@/lib/supabase/types";
+import type { Trip, TripParticipant, ExpenseCategory, SplitType } from "@/lib/supabase/types";
 import { formatCurrency } from "@/lib/expense-calculator";
+import { isMultiHouseholdTrip } from "@/lib/participant-utils";
 import { getExchangeRate } from "@/lib/currency";
 import { EXPENSE_CATEGORIES, SPLIT_TYPES, CURRENCY_LABELS, UNKNOWN_NAME } from "@/lib/i18n-labels";
 
@@ -35,6 +36,7 @@ interface ExpenseDialogProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   tripId: string;
+  trip: Pick<Trip, "created_by" | "admin_participates">;
   participants: TripParticipant[];
   userId: string;
   isAdmin: boolean;
@@ -45,6 +47,7 @@ export function ExpenseDialog({
   open,
   onOpenChange,
   tripId,
+  trip,
   participants,
   userId,
   isAdmin,
@@ -54,9 +57,14 @@ export function ExpenseDialog({
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
 
+  // Single-household mode: no splitting needed, every expense is just recorded.
+  const multiHousehold = isMultiHouseholdTrip(participants, trip);
+
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<ExpenseCategory>("food");
-  const [splitType, setSplitType] = useState<SplitType>("per_person");
+  const [splitType, setSplitType] = useState<SplitType>(
+    multiHousehold ? "per_person" : "private"
+  );
   const [currency, setCurrency] = useState<"ILS" | "EUR" | "USD">("ILS");
 
   // Multi-payer: start with current user
@@ -338,22 +346,24 @@ export function ExpenseDialog({
             )}
           </div>
 
-          {/* Split type */}
-          <div className="space-y-2">
-            <Label>חלוקה</Label>
-            <Select value={splitType} onValueChange={(v) => v && setSplitType(v as SplitType)}>
-              <SelectTrigger className="h-11">
-                <SelectValue>
-                  {(v: unknown) => SPLIT_TYPES[v as SplitType] ?? "חלוקה"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(SPLIT_TYPES).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Split type — hidden for single-household trips (no split needed) */}
+          {multiHousehold && (
+            <div className="space-y-2">
+              <Label>חלוקה</Label>
+              <Select value={splitType} onValueChange={(v) => v && setSplitType(v as SplitType)}>
+                <SelectTrigger className="h-11">
+                  <SelectValue>
+                    {(v: unknown) => SPLIT_TYPES[v as SplitType] ?? "חלוקה"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(SPLIT_TYPES).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Info */}
           {!isAdmin && (

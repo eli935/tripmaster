@@ -16,6 +16,7 @@ import {
   buildGmapsLink,
   type AttractionCategory,
 } from "@/lib/destinations";
+import { resolveAttractionImage } from "@/lib/attraction-image";
 
 const CAT_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   TreePine, Landmark, Waves, Building2, Zap, Binoculars, Star, Smile,
@@ -48,16 +49,24 @@ export function buildTimeline(bookings: DayBooking[], meals: Meal[]): TimelineEv
   return events;
 }
 
+export interface TimelineOrigin {
+  lat: number;
+  lng: number;
+  name?: string;
+}
+
 export function Timeline({
   events,
   activeId,
   onHover,
   dayType,
+  origin,
 }: {
   events: TimelineEvent[];
   activeId?: string | null;
   onHover?: (id: string | null) => void;
   dayType?: string;
+  origin?: TimelineOrigin | null;
 }) {
   if (events.length === 0) {
     return (
@@ -94,7 +103,7 @@ export function Timeline({
             onMouseLeave={() => onHover?.(null)}
             className="relative"
           >
-            <TimelineRow event={ev} active={activeId === ev.id} order={i + 1} />
+            <TimelineRow event={ev} active={activeId === ev.id} order={i + 1} origin={origin} />
           </motion.li>
         ))}
       </AnimatePresence>
@@ -106,13 +115,15 @@ function TimelineRow({
   event,
   active,
   order,
+  origin,
 }: {
   event: TimelineEvent;
   active: boolean;
   order: number;
+  origin?: TimelineOrigin | null;
 }) {
   if (event.kind === "attraction") {
-    return <AttractionRow booking={event.booking} time={event.time} order={order} active={active} />;
+    return <AttractionRow booking={event.booking} time={event.time} order={order} active={active} origin={origin} />;
   }
   return <MealRow meal={event.meal} time={event.time} order={order} active={active} />;
 }
@@ -152,19 +163,23 @@ function AttractionRow({
   time,
   order,
   active,
+  origin,
 }: {
   booking: DayBooking;
   time: string;
   order: number;
   active: boolean;
+  origin?: TimelineOrigin | null;
 }) {
   const [expanded, setExpanded] = useState(false);
   const cat = (booking.category ?? "historic") as AttractionCategory;
   const theme = CATEGORY_THEME[cat] ?? CATEGORY_THEME.historic;
   const Icon = CAT_ICONS[theme.icon] ?? Landmark;
   const estimated = !booking.time;
-  const waze = booking.waze_url ?? buildWazeLink(booking.lat, booking.lng, booking.name);
-  const gmaps = booking.gmaps_url ?? buildGmapsLink(booking.lat, booking.lng, booking.name);
+  // Build navigation links with accommodation as origin if available (Gmaps/Apple;
+  // Waze always starts from current GPS by design).
+  const waze = buildWazeLink(booking.lat, booking.lng, booking.name, origin ?? undefined);
+  const gmaps = buildGmapsLink(booking.lat, booking.lng, booking.name, origin ?? undefined);
 
   return (
     <div className="mr-14 relative">
@@ -177,14 +192,14 @@ function AttractionRow({
           transition-all`}
       >
         <div className="p-4 flex gap-3 items-start">
-          {booking.image_url && (
-            <motion.img
-              layoutId={`img-${booking.booking_id}`}
-              src={booking.image_url}
-              alt={booking.name}
-              className="w-20 h-20 rounded-xl object-cover flex-shrink-0 border border-[color:var(--gold-400)]/20"
-            />
-          )}
+          <motion.img
+            layoutId={`img-${booking.booking_id}`}
+            src={resolveAttractionImage(booking.image_url, booking.category)}
+            alt={booking.name}
+            loading="lazy"
+            decoding="async"
+            className="w-20 h-20 rounded-xl object-cover flex-shrink-0 border border-[color:var(--gold-400)]/20"
+          />
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2 mb-1">
               <h3 className="font-serif text-base leading-tight text-[color:var(--gold-100)] line-clamp-2">

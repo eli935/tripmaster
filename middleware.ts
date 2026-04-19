@@ -7,6 +7,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.json|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Only run on auth-sensitive routes; skip static assets, API (handles own auth),
+    // public pages (login/invite/auth), and images/manifest.
+    "/((?!_next/|api/|login|onboarding|auth|invite|favicon|manifest|icons|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt)$).*)",
   ],
 };

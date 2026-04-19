@@ -39,6 +39,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRealtimeTable } from "@/lib/hooks/use-realtime";
 import type { DestinationInfo, Attraction } from "@/lib/destinations";
 import { buildWazeLink, buildGmapsLink } from "@/lib/destinations";
+import { resolveAttractionImage } from "@/lib/attraction-image";
 import type { Trip, TripDay, DayBooking } from "@/lib/supabase/types";
 
 type TripDayWithBookings = TripDay & { bookings?: DayBooking[] | null };
@@ -277,15 +278,16 @@ export function DestinationOverview({
       .filter((a): a is string => !!a && !chabadCoords[a]);
     if (addrs.length === 0) return;
     (async () => {
-      for (const addr of addrs) {
-        const g = await geocode(addr);
-        if (cancelled) return;
-        if (g) {
-          setChabadCoords((prev) => ({
-            ...prev,
-            [addr]: { lat: g.lat, lng: g.lng },
-          }));
-        }
+      const results = await Promise.all(
+        addrs.map(async (addr) => ({ addr, g: await geocode(addr) }))
+      );
+      if (cancelled) return;
+      const next: Record<string, { lat: number; lng: number }> = {};
+      for (const { addr, g } of results) {
+        if (g) next[addr] = { lat: g.lat, lng: g.lng };
+      }
+      if (Object.keys(next).length > 0) {
+        setChabadCoords((prev) => ({ ...prev, ...next }));
       }
     })();
     return () => {
@@ -961,7 +963,7 @@ function AttractionCard({
           attraction_name: a.name,
           name: a.name,
           description: a.description ?? null,
-          image_url: a.image ?? null,
+          image_url: resolveAttractionImage(a.image, a.type),
           category: a.type,
           lat: typeof a.lat === "number" ? a.lat : null,
           lng: typeof a.lng === "number" ? a.lng : null,
@@ -995,15 +997,15 @@ function AttractionCard({
       transition={{ delay: 0.2 + index * 0.03 }}
       className="rounded-2xl glass glass-hover overflow-hidden group"
     >
-      {a.image && (
-        <div className="h-40 overflow-hidden">
-          <img
-            src={a.image}
-            alt={a.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-          />
-        </div>
-      )}
+      <div className="h-40 overflow-hidden">
+        <img
+          src={resolveAttractionImage(a.image, a.type)}
+          alt={a.name}
+          loading="lazy"
+          decoding="async"
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+        />
+      </div>
       <div className="p-4 space-y-2">
         <div className="flex items-start justify-between">
           <h4 className="font-bold flex items-center gap-2">

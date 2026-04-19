@@ -53,6 +53,28 @@ export function getCountedParticipants<
  * participant list UI, iterate `participants` directly — not the result of
  * this helper.
  */
+/**
+ * Returns true when the trip has MORE THAN ONE household — meaning expense
+ * splitting and settlement UI are meaningful. When only one household is on
+ * the trip (e.g. a single couple / single family), there is no-one to settle
+ * with, so we fall back to "recording-only" mode.
+ *
+ * Heuristic: one `trip_participants` row = one household. Each row already
+ * aggregates adults + children for a single profile/family, so a trip with
+ * a single row is by definition a single household.
+ *
+ * The admin is excluded when `admin_participates === false` (they're organising
+ * but not physically travelling), matching the rest of the counted-participant
+ * logic.
+ */
+export function isMultiHouseholdTrip(
+  participants: Pick<TripParticipant, "profile_id">[],
+  trip: Pick<Trip, "created_by" | "admin_participates">
+): boolean {
+  const counted = participants.filter((p) => isCountedParticipant(p, trip));
+  return counted.length >= 2;
+}
+
 export function getTotalHeadcount(
   participants: TripParticipant[],
   trip: Pick<Trip, "created_by" | "admin_participates">

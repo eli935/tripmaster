@@ -8,6 +8,7 @@ import { ArrowLeft, Check, Smartphone, Wallet, Sparkles, TrendingUp, TrendingDow
 import { toast } from "sonner";
 import type { Expense, Trip, TripParticipant } from "@/lib/supabase/types";
 import { calculateBalances, minimizeTransfers, formatCurrency } from "@/lib/expense-calculator";
+import { isMultiHouseholdTrip } from "@/lib/participant-utils";
 import { useRealtimeTable } from "@/lib/hooks/use-realtime";
 
 interface ExpenseRow {
@@ -174,6 +175,10 @@ export function BalanceDashboard({
     };
   }, []);
 
+  // Detect household composition. Single-household trips (one couple / one
+  // family) skip the settlement UI entirely — there's no-one to owe money to.
+  const multiHousehold = isMultiHouseholdTrip(participants, trip);
+
   // Calculate balances (all in ILS via fx_rate_to_ils)
   const balances = calculateBalances(expenses, participants, profileNames, trip);
 
@@ -204,7 +209,15 @@ export function BalanceDashboard({
     }, 0);
 
   const totalOpen = transfers.reduce((s, t) => s + t.amount, 0);
-  const countUpTotal = useCountUp(totalShared);
+
+  // Grand total includes private expenses too — used in single-household mode
+  // where every expense is effectively "private" (recording-only).
+  const totalAll = expenses.reduce((sum, e) => {
+    const rate = (e as any).fx_rate_to_ils || 1;
+    return sum + Number(e.amount) * Number(rate);
+  }, 0);
+
+  const countUpTotal = useCountUp(multiHousehold ? totalShared : totalAll);
   const countUpOpen = useCountUp(totalOpen);
 
   async function markSettled(transfer: typeof transfers[0]) {
@@ -240,6 +253,68 @@ export function BalanceDashboard({
     if (!phone) return null;
     const clean = phone.replace(/[^\d]/g, "");
     return `https://payboxapp.page.link/?link=https://www.payboxapp.com/send?phone=${clean}`;
+  }
+
+  // -------------------------------------------------------------------------
+  // Single-household mode: show running totals only, no settlement.
+  // (e.g. a couple on a getaway — there's no "who owes whom".)
+  // -------------------------------------------------------------------------
+  if (!multiHousehold) {
+    // Aggregate by category for a simple "where did the money go" view.
+    const byCategory: Record<string, number> = {};
+    for (const e of expenses) {
+      const rate = (e as any).fx_rate_to_ils || 1;
+      const amountILS = Number(e.amount) * Number(rate);
+      const cat = (e as any).category || "other";
+      byCategory[cat] = (byCategory[cat] || 0) + amountILS;
+    }
+    const grandTotal = Object.values(byCategory).reduce((s, v) => s + v, 0);
+    const sortedCats = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
+
+    return (
+      <div className="space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="relative rounded-3xl overflow-hidden p-8 text-white noise-overlay"
+          style={{ background: "var(--gradient-gold-editorial)" }}
+        >
+          <div className="absolute inset-0 opacity-15 bg-[radial-gradient(ellipse_at_top_right,_#FAF3E2,_transparent_60%)]" />
+          <div className="relative text-center">
+            <div className="flex items-center justify-center gap-1.5 text-[11px] uppercase tracking-[0.18em] text-white/70 mb-2 font-serif italic">
+              <Sparkles className="h-3 w-3" />
+              סה״כ הוצאות בטיול
+            </div>
+            <div className="font-display text-5xl md:text-7xl font-black tracking-tight tabular-nums text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
+              {formatCurrency(countUpTotal)}
+            </div>
+            <div className="mt-2 text-xs text-white/80">
+              רישום בלבד — משק בית אחד
+            </div>
+          </div>
+        </motion.div>
+
+        {sortedCats.length > 0 && (
+          <div className="glass rounded-2xl p-4 space-y-2">
+            <h4 className="text-xs font-semibold text-muted-foreground mb-2">
+              לפי קטגוריה
+            </h4>
+            {sortedCats.map(([cat, amount]) => (
+              <div
+                key={cat}
+                className="flex items-center justify-between text-sm py-1.5 border-b border-white/5 last:border-0"
+              >
+                <span className="text-muted-foreground">{cat}</span>
+                <span className="tabular-nums font-display font-medium">
+                  {formatCurrency(amount)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (

@@ -66,23 +66,55 @@ export const CATEGORY_THEME: Record<AttractionCategory, { label: string; icon: s
   kids:      { label: "ילדים",    icon: "Smile",      color: "#ec4899" },
 };
 
-export function buildWazeLink(lat?: number | null, lng?: number | null, addressFallback?: string): string {
+export interface Origin {
+  lat?: number | null;
+  lng?: number | null;
+}
+
+export function buildWazeLink(
+  lat?: number | null,
+  lng?: number | null,
+  addressFallback?: string,
+  _origin?: Origin
+): string {
+  // Waze's public ul endpoint doesn't accept a `from=` param —
+  // navigation always starts from current GPS. Origin is unused but kept
+  // in the signature for symmetry with Gmaps/Apple.
+  void _origin;
   if (typeof lat === "number" && typeof lng === "number") {
     return `https://waze.com/ul?ll=${lat}%2C${lng}&navigate=yes`;
   }
   return `https://waze.com/ul?q=${encodeURIComponent(addressFallback ?? "")}`;
 }
 
-export function buildGmapsLink(lat?: number | null, lng?: number | null, addressFallback?: string): string {
+export function buildGmapsLink(
+  lat?: number | null,
+  lng?: number | null,
+  addressFallback?: string,
+  origin?: Origin
+): string {
   if (typeof lat === "number" && typeof lng === "number") {
-    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+    const originParam =
+      origin && typeof origin.lat === "number" && typeof origin.lng === "number"
+        ? `&origin=${origin.lat},${origin.lng}`
+        : "";
+    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}${originParam}`;
   }
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressFallback ?? "")}`;
 }
 
-export function buildAppleLink(lat?: number | null, lng?: number | null, addressFallback?: string): string {
+export function buildAppleLink(
+  lat?: number | null,
+  lng?: number | null,
+  addressFallback?: string,
+  origin?: Origin
+): string {
   if (typeof lat === "number" && typeof lng === "number") {
-    return `https://maps.apple.com/?daddr=${lat},${lng}`;
+    const fromParam =
+      origin && typeof origin.lat === "number" && typeof origin.lng === "number"
+        ? `&saddr=${origin.lat},${origin.lng}`
+        : "";
+    return `https://maps.apple.com/?daddr=${lat},${lng}${fromParam}`;
   }
   return `https://maps.apple.com/?q=${encodeURIComponent(addressFallback ?? "")}`;
 }

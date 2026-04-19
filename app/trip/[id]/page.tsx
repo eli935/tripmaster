@@ -37,12 +37,12 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
     expensePayersRes,
     settlementsRes,
   ] = await Promise.all([
-    supabase.from("trip_participants").select("*, profile:profiles(*)").eq("trip_id", id),
+    supabase.from("trip_participants").select("id, trip_id, profile_id, role, adults, children, joined_at, profile:profiles(id, full_name, phone, adults, children)").eq("trip_id", id),
     supabase.from("trip_days").select("*").eq("trip_id", id).order("date", { ascending: true }),
     supabase.from("trip_equipment").select("*").eq("trip_id", id),
     supabase
       .from("expenses")
-      .select("*, payer:profiles!paid_by(*)")
+      .select("*, payer:profiles!paid_by(id, full_name)")
       .eq("trip_id", id)
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
@@ -125,7 +125,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
     <AppShell userName={profile?.full_name}>
       <TripOverview
         trip={trip}
-        participants={participantsRes.data || []}
+        participants={(participantsRes.data as unknown as import("@/lib/supabase/types").TripParticipant[]) || []}
         days={days}
         meals={meals}
         mealItems={mealItems || []}

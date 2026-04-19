@@ -28,6 +28,7 @@ stage-<N>_v<X.Y>_<YYYY-MM-DD>_<HH-MM>.md
 | 10 | ui-designer + database-expert + destinations-expert | ✅ הושלם — Daily Itinerary v9.1 | 2026-04-19 | 00:00 | [stage-10_v1.0_2026-04-19_00-00.md](stage-10_v1.0_2026-04-19_00-00.md) |
 | 11 | general-purpose (audit+fix) | ✅ הושלם — admin_participates enforcement v9.2 | 2026-04-19 | 00:20 | [stage-11_v1.0_2026-04-19_00-20.md](stage-11_v1.0_2026-04-19_00-20.md) |
 | 12 | growth-marketer + SaaS-economist | 📋 אסטרטגיה מוכנה — דורש החלטה | 2026-04-19 | 01:00 | [stage-12_v1.0_2026-04-19_01-00.md](stage-12_v1.0_2026-04-19_01-00.md) |
+| 13 | performance + financial + tripmaster-manager | ✅ 5 שיפורים דחופים · 📋 Wizard Phase 1 מוכן | 2026-04-19 | 02:00 | [stage-13_v1.0_2026-04-19_02-00.md](stage-13_v1.0_2026-04-19_02-00.md) |
 
 ## 📝 פורמט סטנדרטי לדוח
 
