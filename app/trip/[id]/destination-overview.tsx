@@ -1715,6 +1715,29 @@ function DailyPlan({
 
   return (
     <Section title="תוכנית יומית" icon="📅" delay={0.16}>
+      {tripId && (
+        <Link
+          href={`/trip/${tripId}/plan`}
+          className="flex items-center justify-between gap-3 rounded-2xl p-4 mb-3 bg-gradient-to-l from-[var(--gold-700)]/30 to-[var(--gold-500)]/20 border border-[var(--gold-500)]/40 hover:border-[var(--gold-400)]/60 transition-colors group"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-full grid place-items-center bg-gradient-to-br from-[var(--gold-500)] to-[var(--gold-700)] flex-shrink-0">
+              <span className="text-lg">✨</span>
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-serif font-bold text-[var(--gold-100)]">
+                תכנון טיול עם AI
+              </div>
+              <div className="text-[11px] text-muted-foreground truncate">
+                ענו על 5 שאלות ונבנה לכם סדר יום מותאם — כולל אטרקציות, ארוחות וזמני נסיעה
+              </div>
+            </div>
+          </div>
+          <span className="text-[var(--gold-200)] group-hover:translate-x-[-4px] transition-transform flex-shrink-0">
+            ←
+          </span>
+        </Link>
+      )}
       {daysWithBookings.length === 0 ? (
         <div className="rounded-2xl glass p-4 text-xs text-muted-foreground text-center">
           התוכנית היומית תתעדכן אוטומטית כשתשריין אטרקציות

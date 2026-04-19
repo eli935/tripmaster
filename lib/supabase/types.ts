@@ -20,6 +20,40 @@ export interface Profile {
   created_at: string;
 }
 
+export type TripPace = "slow" | "balanced" | "packed";
+export type TripTransport = "rental_car" | "taxi" | "walking" | "mixed";
+export type MealStyle = "restaurant" | "self_cooking" | "mixed";
+
+export interface TripPreferences {
+  pace?: TripPace;
+  interests?: string[];
+  transport?: TripTransport;
+  daily_start?: string;
+  daily_end?: string;
+  siesta?: boolean;
+  meals?: {
+    style?: MealStyle;
+    cuisines?: string[];
+    kosher_level?: string;
+  };
+  budget_per_day?: number;
+  generated_at?: string;
+}
+
+export type PlanItemType = "attraction" | "meal" | "travel" | "rest";
+
+export interface PlanItem {
+  time: string;
+  type: PlanItemType;
+  title: string;
+  duration_min?: number;
+  attraction_id?: string | null;
+  description?: string | null;
+  vendor?: { name?: string; phone?: string; whatsapp?: string; maps_url?: string; notes?: string } | null;
+  verified?: boolean;
+  notes?: string | null;
+}
+
 export interface Trip {
   id: string;
   name: string;
@@ -48,6 +82,7 @@ export interface Trip {
   return_flight_datetime?: string | null;
   return_airport?: string | null;
   return_terminal?: string | null;
+  preferences?: TripPreferences | null;
 }
 
 export interface TripParticipant {
@@ -113,6 +148,7 @@ export interface TripDay {
   day_type: DayType;
   notes: string | null;
   bookings?: DayBooking[];
+  generated_plan?: PlanItem[];
   meals?: Meal[];
 }
 
