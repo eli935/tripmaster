@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Sparkles, Calendar, Map, Utensils, ShoppingBag, Users, Wallet, MessageCircle,
@@ -147,7 +148,18 @@ const COPY = {
 
 export function LandingPage() {
   const [locale, setLocale] = useState<Locale>("he");
+  const searchParams = useSearchParams();
+  const prefillEmail = searchParams.get("email") ?? "";
+  const fromLogin = searchParams.get("from") === "login";
   const t = COPY[locale];
+
+  // Auto-scroll to the form if a user was bounced here from /login
+  useEffect(() => {
+    if (fromLogin) {
+      const el = document.getElementById("lead-form");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [fromLogin]);
 
   return (
     <div dir={t.dir} className="min-h-screen bg-[color:var(--background)]">
@@ -303,7 +315,7 @@ export function LandingPage() {
       </section>
 
       {/* Lead form */}
-      <LeadForm locale={locale} copy={t.form} />
+      <LeadForm locale={locale} copy={t.form} prefillEmail={prefillEmail} fromLogin={fromLogin} />
 
       {/* Floating WhatsApp — always visible on the landing page */}
       <a
@@ -338,13 +350,23 @@ export function LandingPage() {
   );
 }
 
-function LeadForm({ locale, copy }: { locale: Locale; copy: (typeof COPY)["he"]["form"] }) {
+function LeadForm({
+  locale,
+  copy,
+  prefillEmail,
+  fromLogin,
+}: {
+  locale: Locale;
+  copy: (typeof COPY)["he"]["form"];
+  prefillEmail?: string;
+  fromLogin?: boolean;
+}) {
   const [sending, setSending] = useState(false);
   const [ok, setOk] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(prefillEmail ?? "");
   const [phone, setPhone] = useState("");
   const [destination, setDestination] = useState("");
   const [travelDates, setTravelDates] = useState("");
@@ -404,6 +426,27 @@ function LeadForm({ locale, copy }: { locale: Locale; copy: (typeof COPY)["he"][
   return (
     <section id="lead-form" className="py-16 md:py-24 px-4 md:px-8 bg-gradient-to-b from-transparent via-[color:var(--gold-900)]/20 to-transparent">
       <div className="max-w-2xl mx-auto">
+        {fromLogin && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 rounded-2xl border border-[color:var(--gold-500)]/40 bg-[color:var(--gold-500)]/10 p-4 md:p-5 flex items-start gap-3"
+          >
+            <Sparkles className="text-[color:var(--gold-300)] flex-shrink-0 mt-0.5" size={18} />
+            <div>
+              <div className="font-serif text-lg text-[color:var(--gold-100)] mb-1">
+                {locale === "he"
+                  ? "לא מצאנו את המייל שלך במערכת — בוא נכיר!"
+                  : "We didn't find your email — let's get to know you!"}
+              </div>
+              <p className="text-xs md:text-sm text-foreground/70 leading-relaxed">
+                {locale === "he"
+                  ? "נראה שעדיין אין לך חשבון או הזמנה פעילה. השאר פרטים קצרים ואני (אלי) אחזור אליך אישית תוך 24 שעות להכיר ולתאם איך אנחנו בונים יחד את הטיול הבא שלך."
+                  : "It looks like you don't have an account or active invitation yet. Leave a few details and I (Eli) will reach out personally within 24 hours to understand how we can plan your next trip together."}
+              </p>
+            </div>
+          </motion.div>
+        )}
         <div className="text-center mb-8">
           <h2 className="font-serif text-3xl md:text-4xl text-[color:var(--gold-100)] mb-2">
             {copy.title}

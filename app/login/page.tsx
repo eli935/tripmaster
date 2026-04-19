@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -17,6 +19,27 @@ export default function LoginPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+
+    // Gate: check whether this email was ever invited or signed up.
+    // If not — redirect to landing with email pre-filled so they can
+    // leave details instead of landing on an empty dashboard.
+    try {
+      const checkRes = await fetch("/api/auth/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (checkRes.ok) {
+        const data = (await checkRes.json()) as { registered?: boolean };
+        if (data.registered === false) {
+          setLoading(false);
+          router.push(`/?email=${encodeURIComponent(email)}&from=login#lead-form`);
+          return;
+        }
+      }
+    } catch {
+      // fail-open: if check fails, proceed with OTP (don't block a real user)
+    }
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
