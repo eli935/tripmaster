@@ -18,18 +18,49 @@ interface Snapshot {
   total_items: number | null;
 }
 
+interface MealStub {
+  id: string;
+  trip_day_id: string;
+  meal_type: string;
+  name: string;
+}
+
+// Key format for "already adopted" detection: "<dayId>|<meal_type>|<name-lowercased>"
+const mealKey = (dayId: string, mealType: string, name: string) =>
+  `${dayId}|${mealType}|${(name || "").trim().toLowerCase()}`;
+
+// Module-level so DayCard can use it too (for the "מאומץ" state).
+function inferMealType(time?: string, title?: string): string {
+  const t = (title ?? "").toLowerCase();
+  if (t.includes("בוקר") || t.includes("breakfast")) return "breakfast";
+  if (t.includes("צהריים") || t.includes("lunch")) return "lunch";
+  if (t.includes("ערב") || t.includes("dinner")) return "dinner";
+  if (t.includes("סעודה ראשונה")) return "seuda_1";
+  if (t.includes("סעודה שניה") || t.includes("סעודה שנייה")) return "seuda_2";
+  if (t.includes("סעודה שלישית")) return "seuda_3";
+  const hour = parseInt((time ?? "12:00").slice(0, 2), 10);
+  if (hour < 10) return "breakfast";
+  if (hour < 16) return "lunch";
+  return "dinner";
+}
+
 export function PlanClient({
   trip,
   initialDays,
+  initialMeals,
   snapshots: initialSnapshots,
 }: {
   trip: Trip;
   initialDays: TripDay[];
+  initialMeals?: MealStub[];
   snapshots?: Snapshot[];
 }) {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [days, setDays] = useState<TripDay[]>(initialDays);
   const [snapshots, setSnapshots] = useState<Snapshot[]>(initialSnapshots ?? []);
+  const [adoptedMealKeys, setAdoptedMealKeys] = useState<Set<string>>(
+    () => new Set((initialMeals ?? []).map((m) => mealKey(m.trip_day_id, m.meal_type, m.name)))
+  );
   const [adopting, setAdopting] = useState<string | null>(null);
   const [restoring, setRestoring] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -72,6 +103,17 @@ export function PlanClient({
     ]);
     if (daysRes.data) setDays(daysRes.data as TripDay[]);
     if (snapsRes.data) setSnapshots(snapsRes.data as Snapshot[]);
+    // Refresh adopted-meal keys so the "מאומץ" badge is accurate.
+    const dayIds = (daysRes.data ?? []).map((d) => d.id);
+    if (dayIds.length) {
+      const { data: mealRows } = await supabase
+        .from("meals")
+        .select("trip_day_id, meal_type, name")
+        .in("trip_day_id", dayIds);
+      setAdoptedMealKeys(
+        new Set((mealRows ?? []).map((m) => mealKey(m.trip_day_id, m.meal_type, m.name)))
+      );
+    }
   }
 
   async function deleteSnapshot(snapshotId: string) {
@@ -108,21 +150,6 @@ export function PlanClient({
     }
   }
 
-  function inferMealType(time?: string, title?: string): string {
-    const t = (title ?? "").toLowerCase();
-    if (t.includes("בוקר") || t.includes("breakfast")) return "breakfast";
-    if (t.includes("צהריים") || t.includes("lunch")) return "lunch";
-    if (t.includes("ערב") || t.includes("dinner")) return "dinner";
-    if (t.includes("סעודה ראשונה")) return "seuda_1";
-    if (t.includes("סעודה שניה") || t.includes("סעודה שנייה")) return "seuda_2";
-    if (t.includes("סעודה שלישית")) return "seuda_3";
-    // Fallback by time-of-day
-    const hour = parseInt((time ?? "12:00").slice(0, 2), 10);
-    if (hour < 10) return "breakfast";
-    if (hour < 16) return "lunch";
-    return "dinner";
-  }
-
   async function adoptItem(day: TripDay, item: PlanItem, itemIdx: number) {
     if (item.type !== "attraction" && item.type !== "meal") return;
     setAdopting(`${day.id}-${itemIdx}`);
@@ -131,6 +158,12 @@ export function PlanClient({
     if (item.type === "meal") {
       try {
         const mealType = inferMealType(item.time, item.title);
+        const key = mealKey(day.id, mealType, item.title);
+        if (adoptedMealKeys.has(key)) {
+          toast.info("הארוחה כבר אומצה");
+          setAdopting(null);
+          return;
+        }
         const { error } = await supabase.from("meals").insert({
           trip_day_id: day.id,
           meal_type: mealType,
@@ -144,9 +177,13 @@ export function PlanClient({
           location_lng: typeof item.location_lng === "number" ? item.location_lng : null,
         });
         if (error) throw error;
+        // Update local state so "✓ מאומץ" appears immediately
+        setAdoptedMealKeys((prev) => new Set(prev).add(key));
         toast.success(`"${item.title}" נוספה כארוחה`);
-      } catch {
-        toast.error("שגיאה בהוספת ארוחה");
+      } catch (err) {
+        toast.error("שגיאה בהוספת ארוחה", {
+          description: err instanceof Error ? err.message : undefined,
+        });
       } finally {
         setAdopting(null);
       }
@@ -312,6 +349,16 @@ export function PlanClient({
     setDays((prev) =>
       prev.map((d) => (d.id === day.id ? { ...d, bookings: nextBookings } : d))
     );
+    // Mark newly-adopted meals in local state so the "מאומץ" badge updates.
+    if (mealsToInsert.length > 0) {
+      setAdoptedMealKeys((prev) => {
+        const next = new Set(prev);
+        for (const m of mealsToInsert) {
+          next.add(mealKey(day.id, m.meal_type, m.name));
+        }
+        return next;
+      });
+    }
     const parts: string[] = [];
     if (toAddBookings.length) parts.push(`${toAddBookings.length} אטרקציות`);
     if (mealsToInsert.length) parts.push(`${mealsToInsert.length} ארוחות`);
@@ -462,6 +509,7 @@ export function PlanClient({
             tripId={trip.id}
             index={i}
             adopting={adopting}
+            adoptedMealKeys={adoptedMealKeys}
             onAdopt={(item, idx) => adoptItem(day, item, idx)}
             onAdoptAll={() => adoptAllForDay(day)}
           />
@@ -500,6 +548,7 @@ function DayCard({
   tripId,
   index,
   adopting,
+  adoptedMealKeys,
   onAdopt,
   onAdoptAll,
 }: {
@@ -507,6 +556,7 @@ function DayCard({
   tripId: string;
   index: number;
   adopting: string | null;
+  adoptedMealKeys: Set<string>;
   onAdopt: (item: PlanItem, idx: number) => void;
   onAdoptAll: () => void;
 }) {
@@ -561,20 +611,26 @@ function DayCard({
         </div>
       ) : (
         <ol className="divide-y divide-white/5">
-          {plan.map((item, idx) => (
-            <PlanItemRow
-              key={idx}
-              item={item}
-              adopting={adopting === `${day.id}-${idx}`}
-              alreadyAdopted={
-                item.type === "attraction" &&
-                bookings.some(
-                  (b) => b.attraction_id === item.attraction_id || b.name === item.title
-                )
-              }
-              onAdopt={() => onAdopt(item, idx)}
-            />
-          ))}
+          {plan.map((item, idx) => {
+            let adopted = false;
+            if (item.type === "attraction") {
+              adopted = bookings.some(
+                (b) => b.attraction_id === item.attraction_id || b.name === item.title
+              );
+            } else if (item.type === "meal") {
+              const mealType = inferMealType(item.time, item.title);
+              adopted = adoptedMealKeys.has(mealKey(day.id, mealType, item.title));
+            }
+            return (
+              <PlanItemRow
+                key={idx}
+                item={item}
+                adopting={adopting === `${day.id}-${idx}`}
+                alreadyAdopted={adopted}
+                onAdopt={() => onAdopt(item, idx)}
+              />
+            );
+          })}
         </ol>
       )}
     </motion.div>
