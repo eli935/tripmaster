@@ -24,11 +24,22 @@ import { approveSoftDelete, rejectSoftDelete } from "@/lib/soft-delete";
 import type { AuditLog, AppVersion } from "@/lib/types-v8";
 import { InviteManager } from "./invite-manager";
 import { PlanSeedPanel } from "@/components/admin/plan-seed-panel";
+import { ParticipantsEditor } from "@/components/admin/participants-editor";
+
+interface ParticipantForAdmin {
+  id: string;
+  profile_id: string;
+  role: string;
+  adults: number;
+  children: number;
+  profile: { id: string; full_name: string | null; phone: string | null } | null;
+}
 
 interface AdminPanelProps {
   tripId: string;
   userId: string;
   tripName: string;
+  participants?: ParticipantForAdmin[];
 }
 
 const ACTION_LABELS: Record<string, { label: string; color: string; icon: any }> = {
@@ -49,7 +60,7 @@ const TABLE_LABELS: Record<string, string> = {
   trips: "טיול",
 };
 
-export function AdminPanel({ tripId, userId, tripName }: AdminPanelProps) {
+export function AdminPanel({ tripId, userId, tripName, participants = [] }: AdminPanelProps) {
   const router = useRouter();
   const supabase = createClient();
   const [pendingDeletes, setPendingDeletes] = useState<any[]>([]);
@@ -151,6 +162,9 @@ export function AdminPanel({ tripId, userId, tripName }: AdminPanelProps) {
           <InviteManager tripId={tripId} tripName={tripName} />
         </CardContent>
       </Card>
+
+      {/* Section: Edit participants' personal details (name + phone) */}
+      <ParticipantsEditor tripId={tripId} participants={participants} />
 
       {/* Section: Seed itinerary plan (admin-only concierge tool) */}
       <PlanSeedPanel tripId={tripId} />

@@ -232,7 +232,25 @@ export function TripOverview({
             />
           )}
           {activeTab === "admin" && isAdmin && (
-            <AdminPanel tripId={trip.id} userId={userId} tripName={trip.name} />
+            <AdminPanel
+              tripId={trip.id}
+              userId={userId}
+              tripName={trip.name}
+              participants={participants.map((p) => ({
+                id: p.id,
+                profile_id: p.profile_id,
+                role: p.role,
+                adults: p.adults,
+                children: p.children,
+                profile: p.profile
+                  ? {
+                      id: p.profile.id,
+                      full_name: p.profile.full_name,
+                      phone: p.profile.phone,
+                    }
+                  : null,
+              }))}
+            />
           )}
           {activeTab === "overview" && (
             <OverviewTab
