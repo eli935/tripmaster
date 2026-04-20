@@ -4,6 +4,9 @@ import { AppShell } from "@/components/app-shell";
 import { PlanClient } from "./plan-client";
 import type { TripDay } from "@/lib/supabase/types";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function PlanPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: tripId } = await params;
   const supabase = await createServerSupabase();

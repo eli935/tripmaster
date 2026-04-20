@@ -4,6 +4,11 @@ import { AppShell } from "@/components/app-shell";
 import { ItineraryClient } from "./itinerary-client";
 import type { TripDay, Meal } from "@/lib/supabase/types";
 
+// Always fetch fresh — the adopt flow writes to `meals` and we want every
+// navigation to this page to see the latest rows (no stale server cache).
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function ItineraryDayPage({
   params,
 }: {
