@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { approveSoftDelete, rejectSoftDelete } from "@/lib/soft-delete";
 import type { AuditLog, AppVersion } from "@/lib/types-v8";
 import { InviteManager } from "./invite-manager";
+import { PlanSeedPanel } from "@/components/admin/plan-seed-panel";
 
 interface AdminPanelProps {
   tripId: string;
@@ -150,6 +151,9 @@ export function AdminPanel({ tripId, userId, tripName }: AdminPanelProps) {
           <InviteManager tripId={tripId} tripName={tripName} />
         </CardContent>
       </Card>
+
+      {/* Section: Seed itinerary plan (admin-only concierge tool) */}
+      <PlanSeedPanel tripId={tripId} />
 
       {/* Section: Pending Deletions */}
       <Card>

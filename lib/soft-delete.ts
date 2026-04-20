@@ -11,59 +11,49 @@ export async function requestSoftDelete(
   userId: string,
   isAdmin: boolean,
   reason?: string
-): Promise<{ success: boolean; pendingApproval: boolean }> {
+): Promise<{ success: boolean; pendingApproval: boolean; error?: string }> {
   const supabase = createClient();
 
-  if (isAdmin) {
-    // Direct delete (soft) + approve
-    const { error } = await supabase
-      .from(table)
-      .update({
+  const patch = isAdmin
+    ? {
         deleted_at: new Date().toISOString(),
         deleted_by: userId,
         deletion_approved: true,
         deletion_approved_by: userId,
         deletion_reason: reason || null,
-      })
-      .eq("id", recordId);
-
-    if (!error) {
-      await supabase.from("audit_log").insert({
-        trip_id: tripId,
-        table_name: table,
-        record_id: recordId,
-        action: "delete_approve",
-        actor_id: userId,
-        notes: reason,
-      });
-    }
-
-    return { success: !error, pendingApproval: false };
-  } else {
-    // Request — not approved yet
-    const { error } = await supabase
-      .from(table)
-      .update({
+      }
+    : {
         deleted_at: new Date().toISOString(),
         deleted_by: userId,
         deletion_approved: false,
         deletion_reason: reason || null,
-      })
-      .eq("id", recordId);
+      };
 
-    if (!error) {
-      await supabase.from("audit_log").insert({
-        trip_id: tripId,
-        table_name: table,
-        record_id: recordId,
-        action: "delete_request",
-        actor_id: userId,
-        notes: reason,
-      });
-    }
-
-    return { success: !error, pendingApproval: true };
+  const { error: updateErr } = await supabase.from(table).update(patch).eq("id", recordId);
+  if (updateErr) {
+    console.error("[soft-delete] update failed", { table, recordId, updateErr });
+    return {
+      success: false,
+      pendingApproval: !isAdmin,
+      error: updateErr.message,
+    };
   }
+
+  // Audit log is best-effort — if RLS blocks the insert we still consider
+  // the delete successful. The UI truth is in the row's deleted_at.
+  const { error: auditErr } = await supabase.from("audit_log").insert({
+    trip_id: tripId,
+    table_name: table,
+    record_id: recordId,
+    action: isAdmin ? "delete_approve" : "delete_request",
+    actor_id: userId,
+    notes: reason,
+  });
+  if (auditErr) {
+    console.warn("[soft-delete] audit log insert failed (non-fatal)", auditErr);
+  }
+
+  return { success: true, pendingApproval: !isAdmin };
 }
 
 /**

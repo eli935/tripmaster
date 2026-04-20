@@ -45,7 +45,9 @@ export function DeleteButton({
       }
       router.refresh();
     } else {
-      toast.error("שגיאה במחיקה");
+      toast.error("שגיאה במחיקה", {
+        description: result.error || "לא התקבלה הודעת שגיאה מפורטת",
+      });
     }
   }
 

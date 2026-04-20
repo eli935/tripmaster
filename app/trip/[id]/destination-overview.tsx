@@ -40,6 +40,7 @@ import { useRealtimeTable } from "@/lib/hooks/use-realtime";
 import type { DestinationInfo, Attraction } from "@/lib/destinations";
 import { buildWazeLink, buildGmapsLink } from "@/lib/destinations";
 import { resolveAttractionImage } from "@/lib/attraction-image";
+import { LocalTimeWidget } from "@/components/local-time-widget";
 import type { Trip, TripDay, DayBooking } from "@/lib/supabase/types";
 
 type TripDayWithBookings = TripDay & { bookings?: DayBooking[] | null };
@@ -481,6 +482,14 @@ export function DestinationOverview({
             ))}
           </div>
         </motion.div>
+      )}
+
+      {/* Local time + time-difference widget */}
+      {!isDomestic && destination.coordinates?.tz && (
+        <LocalTimeWidget
+          destinationTz={destination.coordinates.tz}
+          destinationLabel={destination.name}
+        />
       )}
 
       {/* Chabad Houses */}

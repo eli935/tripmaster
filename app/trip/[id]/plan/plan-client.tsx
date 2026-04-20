@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Calendar, ChevronLeft, Check, Plus, Clock, MapPin, History, RotateCcw, Phone, MessageCircle, Trash2 } from "lucide-react";
+import { ArrowRight, Sparkles, Calendar, ChevronLeft, Check, Plus, Clock, MapPin, History, RotateCcw, Phone, MessageCircle, Trash2, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { PlanWizard } from "@/components/plan/plan-wizard";
 import { createClient } from "@/lib/supabase/client";
@@ -272,7 +272,17 @@ export function PlanClient({
               </p>
               <PreferencesSummary prefs={trip.preferences} />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 print:hidden">
+              {hasAnyPlan && (
+                <button
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-1 px-3 py-2.5 rounded-xl border border-[color:var(--gold-500)]/30 text-[color:var(--gold-100)] text-sm hover:bg-[color:var(--gold-500)]/10 transition"
+                  title="ייצוא ל-PDF / הדפסה"
+                >
+                  <Printer size={14} />
+                  <span className="hidden md:inline">PDF / הדפס</span>
+                </button>
+              )}
               {snapshots.length > 1 && (
                 <button
                   onClick={() => setShowHistory((v) => !v)}
@@ -389,6 +399,18 @@ export function PlanClient({
           }}
         />
       )}
+
+      {/* Print / PDF stylesheet — keep simple selectors only (Tailwind
+          arbitrary-value selectors aren't valid in raw CSS). */}
+      <style jsx global>{`
+        @media print {
+          body { background: white !important; color: black !important; }
+          nav, header { display: none !important; }
+          a[href] { color: black !important; text-decoration: none; }
+          section, ol, li { break-inside: avoid; }
+          h1, h2, h3, h4 { color: black !important; }
+        }
+      `}</style>
     </div>
   );
 }
