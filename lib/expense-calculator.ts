@@ -50,10 +50,20 @@ export function calculateBalances(
     ? getTotalHeadcount(participants, trip).total
     : participants.reduce((sum, p) => sum + p.adults + p.children, 0);
 
+  // When the admin is marked as not participating, they should not appear
+  // in the settlements UI at all. Any shared expense they paid is treated
+  // as private-to-admin (admin's balance self-cancels, other participants
+  // are not debited). This matches the user intent: "only those actually
+  // traveling appear in the settlement".
+  const adminNotParticipating =
+    !!trip && trip.admin_participates === false && !!trip.created_by;
+  const adminId = adminNotParticipating ? trip!.created_by : null;
+
   const balances: Record<string, Balance> = {};
 
-  // Initialize balances for ALL participants (admin still needs a balance row
-  // because they can be an expense payer even when not counted).
+  // Initialize balances for participants. Admin is still included here when
+  // excluded — so they can absorb their own shared-expense payments without
+  // affecting others — but filtered out of the returned list at the end.
   for (const p of participants) {
     balances[p.profile_id] = {
       profileId: p.profile_id,
@@ -70,6 +80,16 @@ export function calculateBalances(
 
     // Track private expenses separately (each family pays their own)
     if (expense.split_type === "private") {
+      if (balances[expense.paid_by]) {
+        balances[expense.paid_by].totalPaid += amountILS;
+        balances[expense.paid_by].totalOwed += amountILS;
+      }
+      continue;
+    }
+
+    // Non-participating admin paid a shared expense → treat as private to
+    // admin. Admin's balance zeros out; no debit is propagated to others.
+    if (adminNotParticipating && expense.paid_by === adminId) {
       if (balances[expense.paid_by]) {
         balances[expense.paid_by].totalPaid += amountILS;
         balances[expense.paid_by].totalOwed += amountILS;
@@ -123,10 +143,18 @@ export function calculateBalances(
   }
 
   // Calculate net balance
-  return Object.values(balances).map((b) => ({
+  const out = Object.values(balances).map((b) => ({
     ...b,
     balance: b.totalPaid - b.totalOwed,
   }));
+
+  // Hide non-participating admin from the settlements list entirely.
+  // Their row has self-cancelling totals (handled above) so omitting it
+  // keeps the list consistent.
+  if (adminNotParticipating && adminId) {
+    return out.filter((b) => b.profileId !== adminId);
+  }
+  return out;
 }
 
 /**
