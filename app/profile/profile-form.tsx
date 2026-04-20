@@ -50,13 +50,18 @@ export function ProfileForm({ profile, userId }: ProfileFormProps) {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    const cleanPhone = phone.trim().replace(/[^\d+]/g, "");
+    if (cleanPhone.length < 9) {
+      toast.error("טלפון חובה — לפחות 9 ספרות");
+      return;
+    }
     setSaving(true);
 
     const { error } = await supabase
       .from("profiles")
       .update({
         full_name: fullName,
-        phone,
+        phone: cleanPhone,
         adults,
         children: children.filter((c) => c.name.trim()),
       })
@@ -98,14 +103,19 @@ export function ProfileForm({ profile, userId }: ProfileFormProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label>טלפון</Label>
+              <Label>טלפון (וואטסאפ) *</Label>
               <Input
+                type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="050-1234567"
+                placeholder="+972501234567"
                 dir="ltr"
+                required
                 className="text-left"
               />
+              <p className="text-[11px] text-muted-foreground">
+                חובה — נשלח לכם וואטסאפ עם סדר היום היומי בזמן הטיול.
+              </p>
             </div>
             <div className="space-y-2">
               <Label>מספר מבוגרים במשפחה</Label>

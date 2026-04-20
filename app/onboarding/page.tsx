@@ -96,6 +96,12 @@ function OnboardingForm() {
       toast.error("נא למלא את השם המלא");
       return;
     }
+    // Phone is now required so we can send the daily WhatsApp itinerary.
+    const cleanPhone = phone.trim().replace(/[^\d+]/g, "");
+    if (cleanPhone.length < 9) {
+      toast.error("נא להזין מספר טלפון תקין (לפחות 9 ספרות) — נדרש לשליחת תוכנית יומית ב-WhatsApp");
+      return;
+    }
 
     setSaving(true);
     const {
@@ -116,7 +122,7 @@ function OnboardingForm() {
       {
         id: user.id,
         full_name: fullName.trim(),
-        phone: phone.trim() || null,
+        phone: cleanPhone,
         adults,
         children: cleanChildren,
       },
@@ -195,14 +201,19 @@ function OnboardingForm() {
               </div>
 
               <div className="space-y-1.5">
-                <Label>טלפון (אופציונלי)</Label>
+                <Label>טלפון (וואטסאפ) *</Label>
                 <Input
+                  type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="0501234567"
+                  placeholder="+972501234567"
                   dir="ltr"
+                  required
                   className="h-11"
                 />
+                <p className="text-[11px] text-muted-foreground">
+                  נצרף לכם הודעת וואטסאפ עם סדר היום שלכם בכל בוקר בזמן הטיול.
+                </p>
               </div>
 
               <div className="space-y-1.5">
@@ -287,7 +298,7 @@ function OnboardingForm() {
 
               <Button
                 type="submit"
-                disabled={saving || !fullName.trim()}
+                disabled={saving || !fullName.trim() || phone.trim().replace(/[^\d+]/g, "").length < 9}
                 className="w-full h-12 rounded-full gradient-gold text-white border-0 shadow-[0_4px_20px_-6px_rgba(212,169,96,0.6)]"
               >
                 {saving ? (

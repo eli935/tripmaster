@@ -24,6 +24,13 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
 
   if (!trip) redirect("/dashboard");
 
+  // Phone is required so we can send the daily WhatsApp itinerary —
+  // bounce to /profile (then back here) if missing on the user's profile.
+  const phoneClean = ((profile?.phone as string) || "").replace(/[^\d+]/g, "");
+  if (phoneClean.length < 9) {
+    redirect(`/profile?next=${encodeURIComponent(`/trip/${id}`)}&reason=phone_required`);
+  }
+
   // All parallel queries — massive speed improvement
   const [
     participantsRes,

@@ -561,9 +561,12 @@ function LeadForm({
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>{copy.phone}</label>
+              <label className={labelCls}>
+                {copy.phone} <span className="text-red-400">*</span>
+              </label>
               <input
                 type="tel"
+                required
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className={inputCls}
