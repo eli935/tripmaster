@@ -21,8 +21,15 @@ import { toast } from "sonner";
 import type { Trip, TripParticipant, ExpenseCategory, SplitType } from "@/lib/supabase/types";
 import { formatCurrency } from "@/lib/expense-calculator";
 import { isMultiHouseholdTrip } from "@/lib/participant-utils";
-import { getExchangeRate } from "@/lib/currency";
 import { EXPENSE_CATEGORIES, SPLIT_TYPES, CURRENCY_LABELS, UNKNOWN_NAME } from "@/lib/i18n-labels";
+
+function todayISO(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 // EXPENSE_CATEGORIES now imported from @/lib/i18n-labels
 
@@ -66,6 +73,7 @@ export function ExpenseDialog({
     multiHousehold ? "per_person" : "private"
   );
   const [currency, setCurrency] = useState<"ILS" | "EUR" | "USD">("ILS");
+  const [expenseDate, setExpenseDate] = useState<string>(todayISO());
 
   // Multi-payer: start with current user
   const [payers, setPayers] = useState<Payer[]>([
@@ -129,14 +137,34 @@ export function ExpenseDialog({
     const primaryPayer = payers[0];
     const total = totalAmount;
 
-    // Lock FX rate to ILS at moment of creation (historical accuracy)
-    let fxRateToIls = 1;
+    // Lock FX rate to ILS using the rate on `expenseDate`, not "today".
+    // This matters on multi-week trips where the rate moves — receipts
+    // must convert with the day they were spent, not the day entered.
+    let fxRateToIls: number | null = 1;
+    let fxRateDate: string | null = expenseDate;
     if (currency !== "ILS") {
       try {
-        const rates = await getExchangeRate(currency, ["ILS"]);
-        fxRateToIls = rates?.rates?.ILS || (currency === "EUR" ? 4.05 : 3.72);
+        const res = await fetch(
+          `/api/fx?date=${expenseDate}&base=${currency}&target=ILS`,
+          { cache: "no-store" }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          fxRateToIls = Number(data.rate);
+          fxRateDate = data.rate_date || expenseDate;
+        } else {
+          // Soft failure — save without a rate. The backfill endpoint or
+          // the admin can fix this later. Do NOT silently use a hardcoded
+          // fallback (that's the bug we're fixing).
+          fxRateToIls = null;
+          fxRateDate = null;
+          toast.warning(
+            "שער החליפין לא נטען — ההוצאה נשמרה ללא שער. מנהל יוכל להשלים בהמשך."
+          );
+        }
       } catch {
-        fxRateToIls = currency === "EUR" ? 4.05 : 3.72;
+        fxRateToIls = null;
+        fxRateDate = null;
       }
     }
 
@@ -150,7 +178,9 @@ export function ExpenseDialog({
         category,
         description,
         split_type: splitType,
+        expense_date: expenseDate,
         fx_rate_to_ils: fxRateToIls,
+        fx_rate_date: fxRateDate,
         fx_locked_at: new Date().toISOString(),
       })
       .select()
@@ -186,6 +216,7 @@ export function ExpenseDialog({
     onOpenChange(false);
     // Reset
     setDescription("");
+    setExpenseDate(todayISO());
     setPayers([{ profile_id: userId, amount: "", name: currentUserName }]);
     router.refresh();
   }
@@ -213,6 +244,23 @@ export function ExpenseDialog({
               required
               className="h-11"
             />
+          </div>
+
+          {/* Expense date — what day was the money actually spent?
+              Critical for locking the correct FX rate on multi-week trips. */}
+          <div className="space-y-2">
+            <Label>תאריך ההוצאה</Label>
+            <Input
+              type="date"
+              value={expenseDate}
+              onChange={(e) => setExpenseDate(e.target.value)}
+              max={todayISO()}
+              className="h-11"
+              dir="ltr"
+            />
+            <p className="text-xs text-muted-foreground">
+              שער החליפין יינעל לפי התאריך הזה.
+            </p>
           </div>
 
           {/* Category + Currency */}

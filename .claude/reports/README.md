@@ -34,6 +34,7 @@ stage-<N>_v<X.Y>_<YYYY-MM-DD>_<HH-MM>.md
 | 16 | coordinator | ✅ Wizard polish + Landing page + Lead flow (v9.6) | 2026-04-19 | 05:00 | [stage-16_v1.0_2026-04-19_05-00.md](stage-16_v1.0_2026-04-19_05-00.md) |
 | 17 | coordinator | ✅ Vibe/Feeling + Flight-aware + Daily WhatsApp (v9.7+v9.8) | 2026-04-20 | 00:30 | [stage-17_v1.0_2026-04-20_00-30.md](stage-17_v1.0_2026-04-20_00-30.md) |
 | 18 | coordinator | ✅ Gemini Ensemble (v9.9) — code shipped, awaits API key | 2026-04-20 | 00:50 | [stage-18_v1.0_2026-04-20_00-50.md](stage-18_v1.0_2026-04-20_00-50.md) |
+| 19 | financial-expert + coordinator | ✅ Expense FX per-day lock — root-cause fix (v10.0) | 2026-04-20 | 07:30 | [stage-19_v1.0_2026-04-20_07-30.md](stage-19_v1.0_2026-04-20_07-30.md) |
 
 ## 📝 פורמט סטנדרטי לדוח
 

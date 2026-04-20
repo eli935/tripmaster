@@ -1044,8 +1044,24 @@ function ExpensesTab({
             <div className="flex items-center gap-2">
               <div className="text-left">
                 <div className="font-semibold text-sm tabular-nums font-display">{formatCurrency(Number(exp.amount), exp.currency || "ILS")}</div>
+                {/* ILS equivalent + which-day rate — only for foreign currency */}
+                {exp.currency && exp.currency !== "ILS" && (exp as any).fx_rate_to_ils && (
+                  <div className="text-[11px] text-muted-foreground tabular-nums">
+                    ≈ {formatCurrency(Number(exp.amount) * Number((exp as any).fx_rate_to_ils), "ILS")}
+                    {" · שער "}
+                    {Number((exp as any).fx_rate_to_ils).toFixed(4)}
+                    {(exp as any).fx_rate_date && ` · ${(exp as any).fx_rate_date}`}
+                  </div>
+                )}
+                {exp.currency && exp.currency !== "ILS" && !(exp as any).fx_rate_to_ils && (
+                  <div className="text-[11px] text-amber-400 tabular-nums">
+                    ⚠ שער לא נעול
+                  </div>
+                )}
                 <div className="text-xs text-muted-foreground">
-                  {new Date(exp.created_at).toLocaleDateString("he-IL")}
+                  {(exp as any).expense_date
+                    ? new Date((exp as any).expense_date).toLocaleDateString("he-IL")
+                    : new Date(exp.created_at).toLocaleDateString("he-IL")}
                 </div>
               </div>
               {(isAdmin || exp.paid_by === userId) && (

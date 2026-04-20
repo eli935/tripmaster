@@ -2,18 +2,32 @@ import type { Expense, ExpenseSplit, Trip, TripParticipant } from "./supabase/ty
 import { getCountedParticipants, getTotalHeadcount } from "./participant-utils";
 
 /**
- * Convert an expense amount to ILS using the locked FX rate.
- * Falls back to amount (assumes ILS) if rate missing.
+ * Convert an expense amount to ILS using the LOCKED, per-day FX rate
+ * stored on the expense (set at insert time from `daily_fx_rates`).
+ *
+ * IMPORTANT: we no longer fall back to hardcoded constants. A missing
+ * `fx_rate_to_ils` on a foreign-currency expense means the rate fetch
+ * failed — we log loudly and treat the amount as ILS so the trip still
+ * balances (approximately) while an admin runs /api/admin/backfill-fx to
+ * fill the rate in. Silent hardcoded fallbacks caused the original bug
+ * where a 3-week trip converted all expenses at one stale rate.
  */
 function toILS(expense: Expense): number {
   const rate = (expense as any).fx_rate_to_ils;
+  const amount = Number(expense.amount);
+  if (expense.currency === "ILS" || !expense.currency) return amount;
   if (rate && Number(rate) > 0) {
-    return Number(expense.amount) * Number(rate);
+    return amount * Number(rate);
   }
-  // Fallback for legacy rows
-  if (expense.currency === "EUR") return Number(expense.amount) * 4.05;
-  if (expense.currency === "USD") return Number(expense.amount) * 3.72;
-  return Number(expense.amount); // ILS assumed
+  // Foreign currency, no rate locked — loud warning, use raw amount.
+  if (typeof console !== "undefined") {
+    console.warn(
+      `[expense-calculator] Expense ${expense.id} is ${expense.currency} ` +
+        `but has no fx_rate_to_ils. Run /api/admin/backfill-fx. ` +
+        `Treating ${amount} ${expense.currency} as ${amount} ILS for now.`
+    );
+  }
+  return amount;
 }
 
 interface Balance {
@@ -107,9 +121,18 @@ export function calculateBalances(
       if (expense.splits && expense.splits.length > 0) {
         for (const split of expense.splits) {
           if (balances[split.profile_id]) {
-            // Split amounts are in expense currency — convert each
-            const rate = (expense as any).fx_rate_to_ils || 1;
-            balances[split.profile_id].totalOwed += Number(split.amount) * Number(rate);
+            // Split amounts are in expense currency — convert each using
+            // the SAME locked per-day rate as the expense total. ILS rows
+            // (or missing-rate foreign rows) pass through at 1:1, matching
+            // toILS()'s behaviour above.
+            const rawRate = (expense as any).fx_rate_to_ils;
+            const rate =
+              expense.currency === "ILS" || !expense.currency
+                ? 1
+                : rawRate && Number(rawRate) > 0
+                  ? Number(rawRate)
+                  : 1; // warned in toILS already
+            balances[split.profile_id].totalOwed += Number(split.amount) * rate;
           }
         }
       } else {

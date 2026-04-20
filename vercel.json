@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/daily-whatsapp?kind=evening",
       "schedule": "0 19 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-fx",
+      "schedule": "0 2 * * *"
     }
   ]
 }

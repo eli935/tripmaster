@@ -218,6 +218,13 @@ export interface Expense {
   split_type: SplitType;
   receipt_url: string | null;
   created_at: string;
+  /** Business date of the expense (YYYY-MM-DD). Drives FX lookup. */
+  expense_date?: string | null;
+  /** ILS-per-foreign-unit rate locked at save time. */
+  fx_rate_to_ils?: number | null;
+  /** Which day's rate from daily_fx_rates was applied. */
+  fx_rate_date?: string | null;
+  fx_locked_at?: string | null;
   payer?: Profile;
   splits?: ExpenseSplit[];
 }
