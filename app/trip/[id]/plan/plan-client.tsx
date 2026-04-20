@@ -200,16 +200,46 @@ export function PlanClient({
     }
   }
 
+  async function adoptAllTrip() {
+    const daysWithPlan = days.filter((d) => (d.generated_plan ?? []).length > 0);
+    if (daysWithPlan.length === 0) {
+      toast.info("אין תוכנית לאימוץ");
+      return;
+    }
+    let totalAttractions = 0;
+    let totalMeals = 0;
+    for (const day of daysWithPlan) {
+      const plan = (day.generated_plan ?? []) as PlanItem[];
+      totalAttractions += plan.filter((p) => p.type === "attraction").length;
+      totalMeals += plan.filter((p) => p.type === "meal").length;
+    }
+    if (
+      !confirm(
+        `אימוץ כל התוכנית: ${totalAttractions} אטרקציות ו-${totalMeals} ארוחות מכל ${daysWithPlan.length} הימים. פריטים שכבר אומצו ידולגו. להמשיך?`
+      )
+    ) {
+      return;
+    }
+    for (const day of daysWithPlan) {
+      await adoptAllForDay(day);
+    }
+    await refreshDays();
+    toast.success("אימוץ מלא הושלם");
+  }
+
   async function adoptAllForDay(day: TripDay) {
     const plan = (day.generated_plan ?? []) as PlanItem[];
     const attractions = plan.filter((p) => p.type === "attraction");
-    if (attractions.length === 0) {
-      toast.info("אין אטרקציות לאימוץ ביום זה");
+    const meals = plan.filter((p) => p.type === "meal");
+    if (attractions.length === 0 && meals.length === 0) {
+      toast.info("אין פריטים לאימוץ ביום זה");
       return;
     }
-    const existing = (day.bookings ?? []) as DayBooking[];
-    const existingKeys = new Set(existing.map((b) => b.attraction_id ?? b.name));
-    const toAdd: DayBooking[] = attractions
+
+    // ── Attractions → trip_days.bookings ──
+    const existingBookings = (day.bookings ?? []) as DayBooking[];
+    const existingKeys = new Set(existingBookings.map((b) => b.attraction_id ?? b.name));
+    const toAddBookings: DayBooking[] = attractions
       .filter((a) => !existingKeys.has(a.attraction_id ?? a.title))
       .map((a, i) => {
         const enriched = enrichFromCatalog(a);
@@ -228,28 +258,64 @@ export function PlanClient({
           gmaps_url: enriched.gmaps_url ?? null,
           time: a.time,
           duration_minutes: a.duration_min ?? null,
-          order_index: existing.length + i,
+          order_index: existingBookings.length + i,
           user_notes: a.notes ?? null,
           created_at: new Date().toISOString(),
         };
       });
-    if (toAdd.length === 0) {
-      toast.info("כל האטרקציות כבר מאומצות");
+
+    // ── Meals → meals table rows ──
+    // De-dup by meal_type + (name) to avoid re-adding an already-adopted meal.
+    const { data: existingMeals } = await supabase
+      .from("meals")
+      .select("meal_type, name")
+      .eq("trip_day_id", day.id);
+    const mealKeys = new Set((existingMeals ?? []).map((m) => `${m.meal_type}|${m.name}`));
+    const mealsToInsert = meals
+      .map((m) => {
+        const mealType = inferMealType(m.time, m.title);
+        return {
+          trip_day_id: day.id,
+          meal_type: mealType,
+          name: m.title,
+          description: m.description ?? null,
+          time: m.time,
+          servings: 1,
+          location_name: m.location_name ?? null,
+          location_address: m.location_address ?? null,
+          location_lat: typeof m.location_lat === "number" ? m.location_lat : null,
+          location_lng: typeof m.location_lng === "number" ? m.location_lng : null,
+        };
+      })
+      .filter((m) => !mealKeys.has(`${m.meal_type}|${m.name}`));
+
+    if (toAddBookings.length === 0 && mealsToInsert.length === 0) {
+      toast.info("הכל כבר מאומץ");
       return;
     }
-    const nextBookings = [...existing, ...toAdd];
-    const { error } = await supabase
-      .from("trip_days")
-      .update({ bookings: nextBookings })
-      .eq("id", day.id);
-    if (error) {
-      toast.error("שגיאה באימוץ");
-      return;
+
+    const ops: Array<PromiseLike<unknown>> = [];
+    const nextBookings = [...existingBookings, ...toAddBookings];
+    if (toAddBookings.length > 0) {
+      ops.push(
+        supabase
+          .from("trip_days")
+          .update({ bookings: nextBookings })
+          .eq("id", day.id)
+      );
     }
+    if (mealsToInsert.length > 0) {
+      ops.push(supabase.from("meals").insert(mealsToInsert));
+    }
+    await Promise.all(ops);
+
     setDays((prev) =>
       prev.map((d) => (d.id === day.id ? { ...d, bookings: nextBookings } : d))
     );
-    toast.success(`${toAdd.length} אטרקציות נוספו`);
+    const parts: string[] = [];
+    if (toAddBookings.length) parts.push(`${toAddBookings.length} אטרקציות`);
+    if (mealsToInsert.length) parts.push(`${mealsToInsert.length} ארוחות`);
+    toast.success(parts.join(" · ") + " נוספו");
   }
 
   return (
@@ -276,7 +342,17 @@ export function PlanClient({
               </p>
               <PreferencesSummary prefs={trip.preferences} />
             </div>
-            <div className="flex items-center gap-2 print:hidden">
+            <div className="flex items-center gap-2 print:hidden flex-wrap">
+              {hasAnyPlan && (
+                <button
+                  onClick={adoptAllTrip}
+                  className="inline-flex items-center gap-1 px-3 py-2.5 rounded-xl bg-[color:var(--olive-500)]/20 border border-[color:var(--olive-500)]/40 text-[color:var(--gold-100)] text-sm hover:bg-[color:var(--olive-500)]/30 transition"
+                  title="אמץ את כל התוכנית לכל הימים"
+                >
+                  <Check size={14} />
+                  <span className="hidden md:inline">אמץ הכל</span>
+                </button>
+              )}
               {hasAnyPlan && (
                 <button
                   onClick={() => window.print()}
