@@ -20,6 +20,8 @@ export interface ChabadHouse {
 export interface KosherRestaurant {
   name: string;
   type: "meat" | "dairy" | "parve" | "kosher";
+  lat?: number;
+  lng?: number;
   certification: string;
   address: string;
   phone?: string;
@@ -212,6 +214,8 @@ export const MONTENEGRO: DestinationInfo = {
     {
       name: "מסעדת שלום (Shalom)",
       type: "meat",
+      lat: 42.2751,
+      lng: 18.8365,
       certification: "חב״ד מונטנגרו — כשר למהדרין",
       address: "Hotel Harmonia by Dukley, Zavala Peninsula, Budva",
       phone: "+382-69-170-001",
@@ -460,6 +464,8 @@ export const ROME: DestinationInfo = {
     {
       name: "Su Ghetto — Kosher Restaurant",
       type: "meat",
+      lat: 41.8924, // TODO: verify coords
+      lng: 12.4780, // TODO: verify coords
       certification: "רבנות רומא — כשר למהדרין",
       address: "Via del Portico d'Ottavia 2a, Rome",
       phone: "+39-06-6892481",
@@ -471,6 +477,8 @@ export const ROME: DestinationInfo = {
     {
       name: "Nonna Betta",
       type: "meat",
+      lat: 41.8925,
+      lng: 12.4783,
       certification: "רבנות רומא",
       address: "Via del Portico d'Ottavia 16, Rome",
       phone: "+39-06-6806263",
@@ -583,6 +591,8 @@ export const ATHENS: DestinationInfo = {
     {
       name: "Gostijo Kosher Restaurant",
       type: "meat",
+      lat: 37.9771,
+      lng: 23.7337,
       certification: "רבנות יוון",
       address: "Athinas 17, Athens",
       google_maps: "https://maps.google.com/?q=Gostijo+Athens",

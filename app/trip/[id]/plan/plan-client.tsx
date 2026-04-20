@@ -138,6 +138,10 @@ export function PlanClient({
           description: item.description ?? null,
           time: item.time,
           servings: 1,
+          location_name: item.location_name ?? null,
+          location_address: item.location_address ?? null,
+          location_lat: typeof item.location_lat === "number" ? item.location_lat : null,
+          location_lng: typeof item.location_lng === "number" ? item.location_lng : null,
         });
         if (error) throw error;
         toast.success(`"${item.title}" נוספה כארוחה`);

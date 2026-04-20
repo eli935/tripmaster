@@ -55,6 +55,11 @@ export interface PlanItem {
   vendor?: { name?: string; phone?: string; whatsapp?: string; maps_url?: string; notes?: string } | null;
   verified?: boolean;
   notes?: string | null;
+  /** For meal items at a specific restaurant — the venue info. */
+  location_name?: string | null;
+  location_address?: string | null;
+  location_lat?: number | null;
+  location_lng?: number | null;
 }
 
 export interface Trip {
