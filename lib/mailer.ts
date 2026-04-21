@@ -124,6 +124,74 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
+interface SecurityAlertArgs {
+  severity: "info" | "watch" | "action_required" | "critical";
+  subject: string;
+  summary: string; // short plain-text summary
+  detailsHtml?: string; // HTML body (formatted)
+  sourceUrl?: string;
+}
+
+export async function sendSecurityAlertEmail(
+  args: SecurityAlertArgs
+): Promise<{ ok: boolean; error?: string }> {
+  const transport = createTransport();
+  if (!transport) {
+    return { ok: false, error: "GMAIL not configured" };
+  }
+  const to = process.env.GMAIL_USER!;
+  const colorBySev: Record<string, string> = {
+    info: "#4F46E5",
+    watch: "#D4A960",
+    action_required: "#F59E0B",
+    critical: "#DC2626",
+  };
+  const labelBySev: Record<string, string> = {
+    info: "ℹ️ מידע",
+    watch: "👁 תחת מעקב",
+    action_required: "⚠️ דרוש אישור פעולה",
+    critical: "🚨 אירוע קריטי",
+  };
+  const color = colorBySev[args.severity] ?? "#DC2626";
+  const label = labelBySev[args.severity] ?? "אזעקה";
+
+  const html = `
+  <!DOCTYPE html>
+  <html lang="he" dir="rtl">
+    <head><meta charset="UTF-8" /></head>
+    <body style="margin:0;padding:0;background:#0f0f10;font-family:'Frank Ruhl Libre','David',serif;color:#f2efe7;">
+      <div style="max-width:640px;margin:0 auto;padding:32px 20px;">
+        <div style="background:${color};border-radius:16px;padding:20px;text-align:center;color:#fff;margin-bottom:20px;">
+          <div style="font-size:11px;letter-spacing:0.25em;opacity:0.9;">${label}</div>
+          <h1 style="margin:8px 0 4px;font-size:22px;font-weight:900;">${escapeHtml(args.subject)}</h1>
+          <div style="font-size:11px;opacity:0.8;">TripMaster · סוכן אבטחת מידע · ${new Date().toLocaleString("he-IL", { timeZone: "Asia/Jerusalem" })}</div>
+        </div>
+        <div style="background:#1a1a1c;border-radius:12px;padding:16px 18px;margin-bottom:16px;">
+          <p style="font-size:14px;line-height:1.7;color:#e6e1d3;margin:0 0 8px;">${escapeHtml(args.summary)}</p>
+        </div>
+        ${args.detailsHtml ? `<div style="background:#111;border-radius:12px;padding:16px 18px;margin-bottom:16px;font-size:13px;line-height:1.65;color:#c5bfa8;">${args.detailsHtml}</div>` : ""}
+        ${args.sourceUrl ? `<div style="text-align:center;margin:20px 0;"><a href="${args.sourceUrl}" style="display:inline-block;background:#D4A960;color:#1a1206;text-decoration:none;padding:10px 24px;border-radius:999px;font-weight:600;font-size:14px;">פתח את המקור</a></div>` : ""}
+        <hr style="border:none;border-top:1px solid #2a2a2d;margin:24px 0;">
+        <p style="font-size:10px;color:#6b6757;text-align:center;line-height:1.6;">
+          הודעה זו נשלחה אוטומטית ע״י סוכן האבטחה של TripMaster. למעקב פעיל, בקרה ותיעוד.
+        </p>
+      </div>
+    </body>
+  </html>`;
+
+  try {
+    await transport.sendMail({
+      from: `"TripMaster Security Agent" <${to}>`,
+      to,
+      subject: `[${label}] ${args.subject}`,
+      html,
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: (e as Error)?.message || "send_failed" };
+  }
+}
+
 interface LeadNotificationArgs {
   name: string;
   email: string;

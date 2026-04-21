@@ -12,7 +12,7 @@ import { getCountedParticipants, getTotalHeadcount } from "./participant-utils";
  * fill the rate in. Silent hardcoded fallbacks caused the original bug
  * where a 3-week trip converted all expenses at one stale rate.
  */
-function toILS(expense: Expense): number {
+export function toILS(expense: Expense): number {
   const rate = (expense as any).fx_rate_to_ils;
   const amount = Number(expense.amount);
   if (expense.currency === "ILS" || !expense.currency) return amount;

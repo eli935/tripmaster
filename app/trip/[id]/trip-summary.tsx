@@ -26,7 +26,7 @@ import type {
   HolidayType,
 } from "@/lib/supabase/types";
 import { DAY_TYPE_LABELS } from "@/lib/hebrew-calendar";
-import { calculateBalances, minimizeTransfers, formatCurrency } from "@/lib/expense-calculator";
+import { calculateBalances, minimizeTransfers, formatCurrency, toILS } from "@/lib/expense-calculator";
 import { getTotalHeadcount, getCountedParticipants, isCountedParticipant } from "@/lib/participant-utils";
 
 const HOLIDAY_LABELS: Record<HolidayType, string> = {
@@ -63,7 +63,10 @@ export function TripSummary({
     participants,
     trip
   );
-  const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  // CRITICAL: Must convert each expense to ILS using its locked fx rate.
+  // Summing raw `amount` across mixed currencies produces a garbage number
+  // and was misleading users about their actual trip spend.
+  const totalExpenses = expenses.reduce((sum, e) => sum + toILS(e), 0);
   const purchasedItems = shopping.filter((s) => s.is_purchased).length;
   const packedEquipment = equipment.filter((e) => e.status !== "pending").length;
 
