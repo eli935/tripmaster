@@ -18,43 +18,58 @@ export default function LoginPage() {
   const [mode, setMode] = useState<"password" | "magic">("password");
   const supabase = createClient();
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-
-    // Gate: check whether this email was ever invited or signed up.
+  async function isEmailRegistered(): Promise<boolean> {
     try {
-      const checkRes = await fetch("/api/auth/check-email", {
+      const res = await fetch("/api/auth/check-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      if (checkRes.ok) {
-        const data = (await checkRes.json()) as { registered?: boolean };
-        if (data.registered === false) {
-          setLoading(false);
-          router.push(`/?email=${encodeURIComponent(email)}&from=login#lead-form`);
-          return;
-        }
-      }
+      if (!res.ok) return true; // fail-open
+      const data = (await res.json()) as { registered?: boolean };
+      return data.registered !== false;
     } catch {
-      // fail-open: if check fails, proceed
+      return true; // fail-open
     }
+  }
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
 
     if (mode === "password") {
+      // Try the password directly. If it works → route by role. If it fails →
+      // distinguish between "not registered" (send to landing/registration) and
+      // "wrong password for a real user" (stay on login with error).
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      setLoading(false);
-      if (error) {
-        toast.error("התחברות נכשלה", {
-          description:
-            error.message.includes("Invalid")
-              ? "אימייל או סיסמה שגויים"
-              : error.message,
-        });
+      if (!error) {
+        const res = await fetch("/api/auth/post-login-redirect");
+        const { redirect_to } = (await res.json().catch(() => ({}))) as {
+          redirect_to?: string;
+        };
+        setLoading(false);
+        router.push(redirect_to || "/dashboard");
+        router.refresh();
         return;
       }
-      router.push("/dashboard");
-      router.refresh();
+      // Login failed. Was it because the email isn't registered at all?
+      const registered = await isEmailRegistered();
+      setLoading(false);
+      if (!registered) {
+        router.push(`/?email=${encodeURIComponent(email)}&from=login#lead-form`);
+        return;
+      }
+      toast.error("אימייל או סיסמה שגויים", {
+        description: "אם שכחת — לחץ על 'שכחת סיסמה?' למטה",
+      });
+      return;
+    }
+
+    // Magic-link mode: keep the pre-flight check so we don't email non-users.
+    const registered = await isEmailRegistered();
+    if (!registered) {
+      setLoading(false);
+      router.push(`/?email=${encodeURIComponent(email)}&from=login#lead-form`);
       return;
     }
 

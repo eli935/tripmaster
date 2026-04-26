@@ -34,32 +34,20 @@ export async function POST(req: NextRequest) {
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 
-  // 1) Check trip_invitations
-  const { data: inviteRow } = await admin
-    .from("trip_invitations")
-    .select("id")
-    .eq("email", email)
-    .limit(1)
-    .maybeSingle();
-  if (inviteRow) {
-    return NextResponse.json({ registered: true, source: "invitation" });
-  }
-
-  // 2) Check auth.users via admin API (paginated, match by email).
-  //    TripMaster scale is small — page 1 usually suffices; if we ever
-  //    exceed a few hundred users we'll switch to an RPC or indexed query.
-  try {
-    const { data, error } = await admin.auth.admin.listUsers({
-      page: 1,
-      perPage: 1000,
+  // RPC checks both auth.users and trip_invitations in one DB call (security
+  // definer function on the migration). Replaces the previous listUsers admin
+  // call which was returning "Database error finding users" on this project.
+  const { data, error } = await admin.rpc("is_email_registered", {
+    check_email: email,
+  });
+  if (error) {
+    // Fail-open: if the check itself fails, let the user try to log in rather
+    // than block them at the gate. Worst case they hit the password screen
+    // and get an "invalid credentials" error.
+    return NextResponse.json({
+      registered: true,
+      reason: `rpc-error: ${error.message}`,
     });
-    if (!error) {
-      const hit = data.users.some((u) => (u.email ?? "").toLowerCase() === email);
-      if (hit) return NextResponse.json({ registered: true, source: "auth" });
-    }
-  } catch {
-    // fail-open
   }
-
-  return NextResponse.json({ registered: false });
+  return NextResponse.json({ registered: !!data });
 }
