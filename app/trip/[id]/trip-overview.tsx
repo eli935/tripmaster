@@ -306,6 +306,8 @@ export function TripOverview({
               expenses={expenses}
               shopping={shopping}
               lessons={lessons}
+              expensePayers={expensePayers}
+              settlements={settlements}
             />
           )}
           {activeTab === "settings" && (

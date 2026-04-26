@@ -25,9 +25,18 @@ import type {
   LessonLearned,
   HolidayType,
 } from "@/lib/supabase/types";
+import type { ExpensePayer } from "@/lib/types-v8";
 import { DAY_TYPE_LABELS } from "@/lib/hebrew-calendar";
 import { calculateBalances, minimizeTransfers, formatCurrency, toILS } from "@/lib/expense-calculator";
 import { getTotalHeadcount, getCountedParticipants, isCountedParticipant } from "@/lib/participant-utils";
+
+interface SettlementRow {
+  id: string;
+  from_profile: string;
+  to_profile: string;
+  amount_ils: number | string;
+  settled_at: string;
+}
 
 const HOLIDAY_LABELS: Record<HolidayType, string> = {
   pesach: "פסח",
@@ -46,6 +55,8 @@ interface TripSummaryProps {
   expenses: Expense[];
   shopping: ShoppingItem[];
   lessons: LessonLearned[];
+  expensePayers?: ExpensePayer[];
+  settlements?: SettlementRow[];
 }
 
 export function TripSummary({
@@ -57,6 +68,8 @@ export function TripSummary({
   expenses,
   shopping,
   lessons,
+  expensePayers,
+  settlements,
 }: TripSummaryProps) {
   // Respect trip.admin_participates — exclude admin from headcount when false.
   const { total: totalPeople, families: countedFamilies } = getTotalHeadcount(
@@ -74,8 +87,32 @@ export function TripSummary({
   participants.forEach((p) => {
     profileNames[p.profile_id] = (p.profile as any)?.full_name || "—";
   });
-  const balances = calculateBalances(expenses, participants, profileNames, trip);
-  const transfers = minimizeTransfers(balances);
+  // Multi-payer aware: pass expense_payers so the per-person totals match
+  // the balance dashboard (otherwise this summary keeps crediting only the
+  // primary `paid_by` and you see different numbers in two places).
+  const baseBalances = calculateBalances(
+    expenses,
+    participants,
+    profileNames,
+    trip,
+    expensePayers
+  );
+
+  // Apply settlements: every from→to settled amount reduces the from-side
+  // debt (their balance goes up) and the to-side credit (their balance goes
+  // down). Without this the "transfers needed" list keeps showing payments
+  // that already happened.
+  const adjustedBalances = baseBalances.map((b) => {
+    let adjustment = 0;
+    for (const s of settlements ?? []) {
+      const amt = Number(s.amount_ils);
+      if (s.from_profile === b.profileId) adjustment += amt;
+      if (s.to_profile === b.profileId) adjustment -= amt;
+    }
+    return { ...b, balance: b.balance + adjustment };
+  });
+
+  const transfers = minimizeTransfers(adjustedBalances);
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
@@ -221,8 +258,9 @@ export function TripSummary({
         </CardContent>
       </Card>
 
-      {/* Expense Summary */}
-      {transfers.length > 0 && (
+      {/* Expense Summary — always show the per-person totals; only hide the
+          "transfers needed" sub-section when fully balanced. */}
+      {baseBalances.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -230,7 +268,7 @@ export function TripSummary({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {balances.map((b) => (
+            {baseBalances.map((b) => (
               <div key={b.profileId} className="flex justify-between text-sm">
                 <span>{b.name}</span>
                 <span>
@@ -239,13 +277,21 @@ export function TripSummary({
               </div>
             ))}
             <Separator />
-            <div className="font-medium text-sm">העברות נדרשות:</div>
-            {transfers.map((t, i) => (
-              <div key={i} className="flex items-center justify-between text-sm bg-secondary p-2 rounded">
-                <span>{t.fromName} → {t.toName}</span>
-                <Badge variant="destructive">{formatCurrency(t.amount)}</Badge>
+            {transfers.length > 0 ? (
+              <>
+                <div className="font-medium text-sm">העברות נדרשות:</div>
+                {transfers.map((t, i) => (
+                  <div key={i} className="flex items-center justify-between text-sm bg-secondary p-2 rounded">
+                    <span>{t.fromName} → {t.toName}</span>
+                    <Badge variant="destructive">{formatCurrency(t.amount)}</Badge>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <div className="text-sm text-center text-emerald-400">
+                ✓ הכל מאוזן — כל אחד שילם את חלקו
               </div>
-            ))}
+            )}
           </CardContent>
         </Card>
       )}
