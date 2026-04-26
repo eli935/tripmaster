@@ -52,7 +52,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No participants with phone numbers" }, { status: 400 });
   }
 
-  const sent = await sendWhatsAppBulk(messages);
+  const result = await sendWhatsAppBulk(messages);
 
-  return NextResponse.json({ sent, total: messages.length });
+  return NextResponse.json({
+    sent: result.sent,
+    failed: result.failed,
+    reasons: result.reasons,
+    total: messages.length,
+  });
 }

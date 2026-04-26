@@ -36,6 +36,7 @@ stage-<N>_v<X.Y>_<YYYY-MM-DD>_<HH-MM>.md
 | 18 | coordinator | ✅ Gemini Ensemble (v9.9) — code shipped, awaits API key | 2026-04-20 | 00:50 | [stage-18_v1.0_2026-04-20_00-50.md](stage-18_v1.0_2026-04-20_00-50.md) |
 | 19 | financial-expert + coordinator | ✅ Expense FX per-day lock — root-cause fix (v10.0) | 2026-04-20 | 07:30 | [stage-19_v1.0_2026-04-20_07-30.md](stage-19_v1.0_2026-04-20_07-30.md) |
 | 20 | coordinator | ✅ Admin plan seed · Local time · PDF · delete fix (v10.1) | 2026-04-20 | 19:00 | [stage-20_v1.0_2026-04-20_19-00.md](stage-20_v1.0_2026-04-20_19-00.md) |
+| 21 | coordinator | ✅ Daily WhatsApp diagnostics + trip status auto-transition (v10.6) | 2026-04-26 | 21:45 | [stage-21_v1.0_2026-04-26_21-45.md](stage-21_v1.0_2026-04-26_21-45.md) |
 
 ## 📝 פורמט סטנדרטי לדוח
 

@@ -135,6 +135,21 @@ export async function GET(req: NextRequest) {
   }
   const admin = createClient(sbUrl, serviceKey, { auth: { persistSession: false } });
 
+  // Pre-flight: surface configuration problems in the response so the operator
+  // doesn't have to dig through runtime logs to find out why nothing was sent.
+  const config = {
+    provider: process.env.WHATSAPP_PROVIDER ?? "(unset, defaulting to baileys)",
+    bot_url_set: !!process.env.WHATSAPP_BOT_URL,
+    bot_url_localhost: (() => {
+      const u = process.env.WHATSAPP_BOT_URL ?? "";
+      return u.includes("localhost") || u.includes("127.0.0.1");
+    })(),
+    twilio_configured:
+      !!process.env.TWILIO_ACCOUNT_SID &&
+      !!process.env.TWILIO_AUTH_TOKEN &&
+      !!process.env.TWILIO_WHATSAPP_FROM,
+  };
+
   const now = new Date();
   const todayIL = isoDateInIL(now);
   const nowMinIL = minutesSinceMidnightIL(now);
@@ -150,7 +165,14 @@ export async function GET(req: NextRequest) {
 
   let tripsProcessed = 0;
   let messagesSent = 0;
+  let messagesFailed = 0;
   let skipped = 0;
+  const skipReasons: Record<string, number> = {};
+  const sendFailureReasons: Record<string, number> = {};
+  const bumpSkip = (reason: string) => {
+    skipped++;
+    skipReasons[reason] = (skipReasons[reason] ?? 0) + 1;
+  };
 
   for (const trip of trips ?? []) {
     tripsProcessed++;
@@ -168,12 +190,11 @@ export async function GET(req: NextRequest) {
     const eveningTarget = endMin + 30;
 
     if (kind === "morning" && nowMinIL + 60 < morningTarget) {
-      // If current time is still >60 min before the target, skip (too early)
-      skipped++;
+      bumpSkip("too_early_for_morning");
       continue;
     }
     if (kind === "evening" && nowMinIL + 60 < eveningTarget) {
-      skipped++;
+      bumpSkip("too_early_for_evening");
       continue;
     }
 
@@ -184,12 +205,12 @@ export async function GET(req: NextRequest) {
       .eq("trip_id", trip.id)
       .order("date", { ascending: true });
     if (!allDays || allDays.length === 0) {
-      skipped++;
+      bumpSkip("no_trip_days_seeded");
       continue;
     }
     const todayDay = allDays.find((d) => d.date === todayIL);
     if (!todayDay) {
-      skipped++;
+      bumpSkip("no_trip_day_for_today");
       continue;
     }
 
@@ -203,7 +224,7 @@ export async function GET(req: NextRequest) {
       .limit(1)
       .maybeSingle();
     if (existingLog) {
-      skipped++;
+      bumpSkip("already_sent_today");
       continue;
     }
 
@@ -260,30 +281,41 @@ export async function GET(req: NextRequest) {
       .filter((s) => s.length >= 9)
       .map((s) => s.replace(/[^0-9]/g, ""));
     if (phones.length === 0) {
-      skipped++;
+      bumpSkip("no_participants_with_phone");
       continue;
     }
 
     const msgs: WhatsAppMessage[] = phones.map((to) => ({ to, text }));
-    const sent = await sendWhatsAppBulk(msgs);
-    messagesSent += sent;
+    const result = await sendWhatsAppBulk(msgs);
+    messagesSent += result.sent;
+    messagesFailed += result.failed;
+    for (const [reason, count] of Object.entries(result.reasons)) {
+      sendFailureReasons[reason] = (sendFailureReasons[reason] ?? 0) + count;
+    }
 
-    // Log (so we don't resend)
-    await admin.from("whatsapp_log").insert({
-      trip_id: trip.id,
-      trip_day_id: todayDay.id,
-      kind,
-      recipients: sent,
-      payload_preview: text.slice(0, 200),
-    });
+    // Only log if at least one message went through. Logging zero-recipient
+    // rows would block retries on the next cron run because of de-dup.
+    if (result.sent > 0) {
+      await admin.from("whatsapp_log").insert({
+        trip_id: trip.id,
+        trip_day_id: todayDay.id,
+        kind,
+        recipients: result.sent,
+        payload_preview: text.slice(0, 200),
+      });
+    }
   }
 
   return NextResponse.json({
     ok: true,
     kind,
+    config,
     trips_processed: tripsProcessed,
     messages_sent: messagesSent,
+    messages_failed: messagesFailed,
     skipped,
+    skip_reasons: skipReasons,
+    send_failure_reasons: sendFailureReasons,
     now_il: new Date().toLocaleString("he-IL", { timeZone: IL_TZ }),
   });
 }

@@ -14,7 +14,12 @@ export interface WhatsAppMessage {
   text: string;
 }
 
-export async function sendWhatsAppMessage(msg: WhatsAppMessage): Promise<boolean> {
+export interface SendResult {
+  ok: boolean;
+  reason?: string;
+}
+
+export async function sendWhatsAppMessage(msg: WhatsAppMessage): Promise<SendResult> {
   const provider = process.env.WHATSAPP_PROVIDER || "baileys";
 
   try {
@@ -24,41 +29,78 @@ export async function sendWhatsAppMessage(msg: WhatsAppMessage): Promise<boolean
       return await sendViaBaileys(msg);
     }
   } catch (error) {
-    console.error("[WhatsApp] Send failed:", error);
-    return false;
+    const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    console.error(`[WhatsApp] Send failed (provider=${provider}, to=${msg.to}):`, reason);
+    return { ok: false, reason };
   }
 }
 
-export async function sendWhatsAppBulk(messages: WhatsAppMessage[]): Promise<number> {
+export interface BulkResult {
+  sent: number;
+  failed: number;
+  reasons: Record<string, number>;
+}
+
+export async function sendWhatsAppBulk(messages: WhatsAppMessage[]): Promise<BulkResult> {
   let sent = 0;
+  let failed = 0;
+  const reasons: Record<string, number> = {};
   for (const msg of messages) {
-    const ok = await sendWhatsAppMessage(msg);
-    if (ok) sent++;
-    // Small delay to avoid rate limiting
+    const r = await sendWhatsAppMessage(msg);
+    if (r.ok) {
+      sent++;
+    } else {
+      failed++;
+      const key = r.reason ?? "unknown";
+      reasons[key] = (reasons[key] ?? 0) + 1;
+    }
     await new Promise((r) => setTimeout(r, 500));
   }
-  return sent;
+  return { sent, failed, reasons };
 }
 
-async function sendViaBaileys(msg: WhatsAppMessage): Promise<boolean> {
+async function sendViaBaileys(msg: WhatsAppMessage): Promise<SendResult> {
   const botUrl = process.env.WHATSAPP_BOT_URL || "http://localhost:3001/api/send";
 
-  const res = await fetch(botUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      phone: msg.to,
-      message: msg.text,
-    }),
-  });
+  if (!process.env.WHATSAPP_BOT_URL) {
+    return {
+      ok: false,
+      reason: "WHATSAPP_BOT_URL_unset (defaulted to localhost — Vercel cannot reach it)",
+    };
+  }
+  if (botUrl.includes("localhost") || botUrl.includes("127.0.0.1")) {
+    return {
+      ok: false,
+      reason: `WHATSAPP_BOT_URL points to ${new URL(botUrl).host} — unreachable from serverless`,
+    };
+  }
 
-  return res.ok;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const res = await fetch(botUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: msg.to, message: msg.text }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      return { ok: false, reason: `baileys_http_${res.status}${body ? `: ${body.slice(0, 120)}` : ""}` };
+    }
+    return { ok: true };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
-async function sendViaTwilio(msg: WhatsAppMessage): Promise<boolean> {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID!;
-  const authToken = process.env.TWILIO_AUTH_TOKEN!;
-  const from = process.env.TWILIO_WHATSAPP_FROM!; // e.g. "whatsapp:+14155238886"
+async function sendViaTwilio(msg: WhatsAppMessage): Promise<SendResult> {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const from = process.env.TWILIO_WHATSAPP_FROM;
+  if (!accountSid || !authToken || !from) {
+    return { ok: false, reason: "twilio_env_missing (TWILIO_ACCOUNT_SID/AUTH_TOKEN/WHATSAPP_FROM)" };
+  }
 
   const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
   const body = new URLSearchParams({
@@ -76,7 +118,11 @@ async function sendViaTwilio(msg: WhatsAppMessage): Promise<boolean> {
     body: body.toString(),
   });
 
-  return res.ok;
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    return { ok: false, reason: `twilio_http_${res.status}${body ? `: ${body.slice(0, 120)}` : ""}` };
+  }
+  return { ok: true };
 }
 
 // ========= Message Templates =========

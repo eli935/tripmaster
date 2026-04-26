@@ -70,6 +70,11 @@ export async function POST(request: NextRequest) {
     .filter((p: string) => p.length > 5)
     .map((phone: string) => ({ to: phone, text: message }));
 
-  const sent = await sendWhatsAppBulk(messages);
-  return NextResponse.json({ sent, total: messages.length });
+  const result = await sendWhatsAppBulk(messages);
+  return NextResponse.json({
+    sent: result.sent,
+    failed: result.failed,
+    reasons: result.reasons,
+    total: messages.length,
+  });
 }
