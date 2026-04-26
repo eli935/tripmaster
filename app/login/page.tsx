@@ -12,8 +12,10 @@ import { motion } from "framer-motion";
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [mode, setMode] = useState<"password" | "magic">("password");
   const supabase = createClient();
 
   async function handleLogin(e: React.FormEvent) {
@@ -21,8 +23,6 @@ export default function LoginPage() {
     setLoading(true);
 
     // Gate: check whether this email was ever invited or signed up.
-    // If not — redirect to landing with email pre-filled so they can
-    // leave details instead of landing on an empty dashboard.
     try {
       const checkRes = await fetch("/api/auth/check-email", {
         method: "POST",
@@ -38,7 +38,24 @@ export default function LoginPage() {
         }
       }
     } catch {
-      // fail-open: if check fails, proceed with OTP (don't block a real user)
+      // fail-open: if check fails, proceed
+    }
+
+    if (mode === "password") {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      setLoading(false);
+      if (error) {
+        toast.error("התחברות נכשלה", {
+          description:
+            error.message.includes("Invalid")
+              ? "אימייל או סיסמה שגויים"
+              : error.message,
+        });
+        return;
+      }
+      router.push("/dashboard");
+      router.refresh();
+      return;
     }
 
     const { error } = await supabase.auth.signInWithOtp({
@@ -139,6 +156,20 @@ export default function LoginPage() {
                       className="text-left h-12 bg-secondary/50 border-border/50 rounded-xl text-base"
                     />
                   </div>
+                  {mode === "password" && (
+                    <div className="space-y-2">
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="סיסמה"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="h-12 bg-secondary/50 border-border/50 rounded-xl text-base"
+                        autoComplete="current-password"
+                      />
+                    </div>
+                  )}
                   <Button
                     type="submit"
                     className="w-full h-12 rounded-xl text-base gradient-blue border-0 hover:opacity-90 transition-opacity"
@@ -147,7 +178,7 @@ export default function LoginPage() {
                     {loading ? (
                       <>
                         <Loader2 className="ml-2 h-5 w-5 animate-spin" />
-                        שולח...
+                        {mode === "password" ? "מתחבר..." : "שולח..."}
                       </>
                     ) : (
                       <>
@@ -156,9 +187,18 @@ export default function LoginPage() {
                       </>
                     )}
                   </Button>
-                  <p className="text-xs text-center text-muted-foreground">
-                    לינק חד פעמי למייל — בלי סיסמה
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode(mode === "password" ? "magic" : "password");
+                      setPassword("");
+                    }}
+                    className="w-full text-xs text-center text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {mode === "password"
+                      ? "שכחת סיסמה? קבל לינק חד-פעמי במייל"
+                      : "← חזרה לכניסה עם סיסמה"}
+                  </button>
                 </form>
               )}
             </div>

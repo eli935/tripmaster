@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { ArrowRight, Plus, Trash2, Save, Loader2 } from "lucide-react";
+import { ArrowRight, Plus, Trash2, Save, Loader2, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import type { Profile } from "@/lib/supabase/types";
 
@@ -33,6 +33,31 @@ export function ProfileForm({ profile, userId }: ProfileFormProps) {
   const [children, setChildren] = useState<Child[]>(
     (profile?.children as Child[]) || []
   );
+
+  const [newPassword, setNewPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  async function handleSetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (newPassword.length < 8) {
+      toast.error("סיסמה חייבת להיות לפחות 8 תווים");
+      return;
+    }
+    setSavingPassword(true);
+    const res = await fetch("/api/auth/set-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: newPassword }),
+    });
+    setSavingPassword(false);
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      toast.error("שגיאה בעדכון הסיסמה", { description: data.error });
+      return;
+    }
+    setNewPassword("");
+    toast.success("הסיסמה עודכנה — בכניסה הבאה השתמש בה במסך הכניסה");
+  }
 
   function addChild() {
     setChildren([...children, { name: "", age: 0 }]);
@@ -201,6 +226,47 @@ export function ProfileForm({ profile, userId }: ProfileFormProps) {
             </>
           )}
         </Button>
+      </form>
+
+      <form onSubmit={handleSetPassword}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <KeyRound className="h-4 w-4" />
+              סיסמה
+            </CardTitle>
+            <CardDescription className="text-xs">
+              הגדר סיסמה כדי להיכנס בלי לחכות ללינק במייל
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>סיסמה חדשה (לפחות 8 תווים)</Label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="new-password"
+                placeholder="••••••••"
+              />
+            </div>
+            <Button
+              type="submit"
+              variant="outline"
+              className="w-full"
+              disabled={savingPassword || newPassword.length < 8}
+            >
+              {savingPassword ? (
+                <>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  מעדכן...
+                </>
+              ) : (
+                "עדכן סיסמה"
+              )}
+            </Button>
+          </CardContent>
+        </Card>
       </form>
     </div>
   );
