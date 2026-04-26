@@ -7,6 +7,12 @@ import { getOrGenerateDestination } from "@/lib/destination-generator";
 import { getExchangeRate } from "@/lib/currency";
 import { fetchZmanimForDates } from "@/lib/halacha/zmanim";
 
+// router.refresh() after edits (expense, expense_payers, settlements...)
+// must always fetch fresh data — without these, Next.js can serve a stale
+// cached render and the balance dashboard won't reflect the new payer rows.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function TripPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createServerSupabase();
