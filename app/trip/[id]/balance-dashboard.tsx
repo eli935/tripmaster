@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Check, Smartphone, Wallet, Sparkles, TrendingUp, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 import type { Expense, Trip, TripParticipant } from "@/lib/supabase/types";
+import type { ExpensePayer } from "@/lib/types-v8";
 import { calculateBalances, minimizeTransfers, formatCurrency } from "@/lib/expense-calculator";
 import { isMultiHouseholdTrip } from "@/lib/participant-utils";
 import { useRealtimeTable } from "@/lib/hooks/use-realtime";
@@ -39,9 +40,10 @@ interface Settlement {
   trip_id: string;
   from_profile: string;
   to_profile: string;
-  amount: number;
+  amount_ils: number;
   method?: string | null;
   settled_at: string;
+  created_by?: string | null;
 }
 
 interface Props {
@@ -50,6 +52,7 @@ interface Props {
   expenses: Expense[];
   participants: TripParticipant[];
   settlements: Settlement[];
+  expensePayers?: ExpensePayer[];
   userId: string;
   isAdmin: boolean;
 }
@@ -80,6 +83,7 @@ export function BalanceDashboard({
   expenses,
   participants,
   settlements,
+  expensePayers,
   userId,
   isAdmin,
 }: Props) {
@@ -179,14 +183,24 @@ export function BalanceDashboard({
   // family) skip the settlement UI entirely — there's no-one to owe money to.
   const multiHousehold = isMultiHouseholdTrip(participants, trip);
 
-  // Calculate balances (all in ILS via fx_rate_to_ils)
-  const balances = calculateBalances(expenses, participants, profileNames, trip);
+  // Calculate balances (all in ILS via fx_rate_to_ils). Pass expensePayers
+  // so multi-payer expenses (one booking, two families pay half each) are
+  // properly credited to each payer instead of dumping the full amount on
+  // the primary `paid_by`.
+  const balances = calculateBalances(
+    expenses,
+    participants,
+    profileNames,
+    trip,
+    expensePayers
+  );
 
-  // Apply settlements to balances (settled debts reduce remaining balance)
+  // Apply settlements to balances (settled debts reduce remaining balance).
+  // DB column is `amount_ils` — already in ILS at settle time, so no FX needed.
   const settledByPair = new Map<string, number>();
   for (const s of settlements) {
     const key = `${s.from_profile}→${s.to_profile}`;
-    settledByPair.set(key, (settledByPair.get(key) || 0) + Number(s.amount));
+    settledByPair.set(key, (settledByPair.get(key) || 0) + Number(s.amount_ils));
   }
 
   // Adjust balances for settlements
@@ -194,8 +208,8 @@ export function BalanceDashboard({
     let adjustment = 0;
     // Money this person PAID in settlements → reduces their debt (balance goes up)
     for (const s of settlements) {
-      if (s.from_profile === b.profileId) adjustment += Number(s.amount);
-      if (s.to_profile === b.profileId) adjustment -= Number(s.amount);
+      if (s.from_profile === b.profileId) adjustment += Number(s.amount_ils);
+      if (s.to_profile === b.profileId) adjustment -= Number(s.amount_ils);
     }
     return { ...b, balance: b.balance + adjustment };
   });
@@ -230,9 +244,9 @@ export function BalanceDashboard({
       trip_id: tripId,
       from_profile: transfer.from,
       to_profile: transfer.to,
-      amount: transfer.amount,
+      amount_ils: transfer.amount,
       method: "manual",
-      marked_by: userId,
+      created_by: userId,
     });
     if (error) {
       toast.error("שגיאה בסימון", { description: error.message });
@@ -502,7 +516,7 @@ export function BalanceDashboard({
               </span>
               <span className="flex items-center gap-2">
                 <span className="tabular-nums font-display font-medium">
-                  {formatCurrency(Number(s.amount))}
+                  {formatCurrency(Number(s.amount_ils))}
                 </span>
                 <span className="text-muted-foreground">
                   {new Date(s.settled_at).toLocaleDateString("he-IL")}

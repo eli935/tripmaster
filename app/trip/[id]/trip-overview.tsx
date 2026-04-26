@@ -72,7 +72,7 @@ import { DeleteButton } from "./delete-button";
 import type { TripPermission } from "@/lib/permissions";
 import type { ExpensePayer } from "@/lib/types-v8";
 import { FadeUp, StaggerContainer, StaggerItem, GlowPulse } from "@/components/motion";
-import { Paperclip, Compass, MessageCircle, Shield } from "lucide-react";
+import { Paperclip, Compass, MessageCircle, Shield, Pencil } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { DestinationInfo } from "@/lib/destinations";
 import {
@@ -287,6 +287,7 @@ export function TripOverview({
               userId={userId}
               isAdmin={isAdmin}
               settlements={settlements}
+              expensePayers={expensePayers}
             />
           )}
           {activeTab === "files" && (
@@ -987,6 +988,7 @@ function ExpensesTab({
   userId,
   isAdmin,
   settlements,
+  expensePayers,
 }: {
   trip: Trip;
   expenses: Expense[];
@@ -995,9 +997,11 @@ function ExpensesTab({
   userId: string;
   isAdmin: boolean;
   settlements: any[];
+  expensePayers: ExpensePayer[];
 }) {
   const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
   const profileNames: Record<string, string> = {};
   participants.forEach((p) => {
@@ -1005,6 +1009,13 @@ function ExpensesTab({
   });
 
   const currentUserName = profileNames[userId] || "אני";
+
+  const editingPayload = editingExpense
+    ? {
+        expense: editingExpense,
+        payerRows: expensePayers.filter((ep) => ep.expense_id === editingExpense.id),
+      }
+    : null;
 
   return (
     <div className="space-y-4">
@@ -1015,6 +1026,7 @@ function ExpensesTab({
         expenses={expenses}
         participants={participants}
         settlements={settlements}
+        expensePayers={expensePayers}
         userId={userId}
         isAdmin={isAdmin}
       />
@@ -1038,6 +1050,17 @@ function ExpensesTab({
           userId={userId}
           isAdmin={isAdmin}
           currentUserName={currentUserName}
+        />
+        <ExpenseDialog
+          open={!!editingExpense}
+          onOpenChange={(v) => { if (!v) setEditingExpense(null); }}
+          tripId={tripId}
+          trip={trip}
+          participants={participants}
+          userId={userId}
+          isAdmin={isAdmin}
+          currentUserName={currentUserName}
+          editing={editingPayload}
         />
       </div>
 
@@ -1082,6 +1105,17 @@ function ExpensesTab({
                     : new Date(exp.created_at).toLocaleDateString("he-IL")}
                 </div>
               </div>
+              {(isAdmin || exp.paid_by === userId) && (
+                <button
+                  type="button"
+                  onClick={() => setEditingExpense(exp)}
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/5 transition"
+                  title="עריכת הוצאה"
+                  aria-label="עריכת הוצאה"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              )}
               {(isAdmin || exp.paid_by === userId) && (
                 <DeleteButton table="expenses" recordId={exp.id} tripId={tripId} userId={userId} isAdmin={isAdmin} />
               )}

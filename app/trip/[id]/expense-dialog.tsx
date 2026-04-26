@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Trash2, Users, Calculator, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import type { Trip, TripParticipant, ExpenseCategory, SplitType } from "@/lib/supabase/types";
+import type { Trip, TripParticipant, Expense, ExpenseCategory, SplitType } from "@/lib/supabase/types";
+import type { ExpensePayer } from "@/lib/types-v8";
 import { formatCurrency } from "@/lib/expense-calculator";
 import { isMultiHouseholdTrip } from "@/lib/participant-utils";
 import { EXPENSE_CATEGORIES, SPLIT_TYPES, CURRENCY_LABELS, UNKNOWN_NAME } from "@/lib/i18n-labels";
@@ -48,6 +49,8 @@ interface ExpenseDialogProps {
   userId: string;
   isAdmin: boolean;
   currentUserName: string;
+  /** When set, the dialog opens in EDIT mode for this expense. */
+  editing?: { expense: Expense; payerRows: ExpensePayer[] } | null;
 }
 
 export function ExpenseDialog({
@@ -59,10 +62,12 @@ export function ExpenseDialog({
   userId,
   isAdmin,
   currentUserName,
+  editing,
 }: ExpenseDialogProps) {
   const router = useRouter();
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
+  const isEditing = !!editing;
 
   // Single-household mode: no splitting needed, every expense is just recorded.
   const multiHousehold = isMultiHouseholdTrip(participants, trip);
@@ -79,6 +84,42 @@ export function ExpenseDialog({
   const [payers, setPayers] = useState<Payer[]>([
     { profile_id: userId, amount: "", name: currentUserName },
   ]);
+
+  // When opening in edit mode, hydrate state from the expense + payer rows.
+  // When opening in add mode, reset to defaults so a previous edit doesn't
+  // leak into the next "add".
+  useEffect(() => {
+    if (!open) return;
+    if (editing) {
+      const e = editing.expense;
+      setDescription(e.description ?? "");
+      setCategory((e.category as ExpenseCategory) ?? "food");
+      setSplitType(e.split_type as SplitType);
+      setCurrency((e.currency as "ILS" | "EUR" | "USD") ?? "ILS");
+      setExpenseDate(e.expense_date ?? todayISO());
+      const rows = editing.payerRows.length > 0
+        ? editing.payerRows.map((r) => ({
+            profile_id: r.profile_id,
+            amount: String(r.amount),
+            name: participants.find((p) => p.profile_id === r.profile_id)?.profile?.full_name
+              ?? UNKNOWN_NAME,
+          }))
+        : [{
+            profile_id: e.paid_by,
+            amount: String(e.amount),
+            name: participants.find((p) => p.profile_id === e.paid_by)?.profile?.full_name
+              ?? UNKNOWN_NAME,
+          }];
+      setPayers(rows);
+    } else {
+      setDescription("");
+      setCategory("food");
+      setSplitType(multiHousehold ? "per_person" : "private");
+      setCurrency("ILS");
+      setExpenseDate(todayISO());
+      setPayers([{ profile_id: userId, amount: "", name: currentUserName }]);
+    }
+  }, [open, editing, userId, currentUserName, multiHousehold, participants]);
 
   const totalAmount = payers.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
 
@@ -168,34 +209,52 @@ export function ExpenseDialog({
       }
     }
 
-    const { data: expense, error } = await supabase
-      .from("expenses")
-      .insert({
-        trip_id: tripId,
-        paid_by: primaryPayer.profile_id,
-        amount: total,
-        currency,
-        category,
-        description,
-        split_type: splitType,
-        expense_date: expenseDate,
-        fx_rate_to_ils: fxRateToIls,
-        fx_rate_date: fxRateDate,
-        fx_locked_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+    const expensePayload = {
+      trip_id: tripId,
+      paid_by: primaryPayer.profile_id,
+      amount: total,
+      currency,
+      category,
+      description,
+      split_type: splitType,
+      expense_date: expenseDate,
+      fx_rate_to_ils: fxRateToIls,
+      fx_rate_date: fxRateDate,
+      fx_locked_at: new Date().toISOString(),
+    };
 
-    if (error || !expense) {
-      toast.error("שגיאה בשמירה", { description: error?.message });
-      setLoading(false);
-      return;
+    let expenseId: string;
+    if (isEditing && editing) {
+      const { error: updateErr } = await supabase
+        .from("expenses")
+        .update(expensePayload)
+        .eq("id", editing.expense.id);
+      if (updateErr) {
+        toast.error("שגיאה בעדכון", { description: updateErr.message });
+        setLoading(false);
+        return;
+      }
+      expenseId = editing.expense.id;
+      // Replace payer rows: delete old ones, insert new ones.
+      await supabase.from("expense_payers").delete().eq("expense_id", expenseId);
+    } else {
+      const { data: expense, error } = await supabase
+        .from("expenses")
+        .insert(expensePayload)
+        .select()
+        .single();
+      if (error || !expense) {
+        toast.error("שגיאה בשמירה", { description: error?.message });
+        setLoading(false);
+        return;
+      }
+      expenseId = expense.id;
     }
 
     // Insert expense_payers (supports multiple payers)
     await supabase.from("expense_payers").insert(
       payers.map((p) => ({
-        expense_id: expense.id,
+        expense_id: expenseId,
         profile_id: p.profile_id,
         amount: parseFloat(p.amount),
       }))
@@ -205,19 +264,15 @@ export function ExpenseDialog({
     await supabase.from("audit_log").insert({
       trip_id: tripId,
       table_name: "expenses",
-      record_id: expense.id,
-      action: "insert",
+      record_id: expenseId,
+      action: isEditing ? "update" : "insert",
       actor_id: userId,
       new_data: { description, amount: total, payers: payers.map((p) => ({ name: p.name, amount: p.amount })) },
     });
 
-    toast.success("הוצאה נרשמה!");
+    toast.success(isEditing ? "הוצאה עודכנה!" : "הוצאה נרשמה!");
     setLoading(false);
     onOpenChange(false);
-    // Reset
-    setDescription("");
-    setExpenseDate(todayISO());
-    setPayers([{ profile_id: userId, amount: "", name: currentUserName }]);
     router.refresh();
   }
 
@@ -225,7 +280,7 @@ export function ExpenseDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>הוספת הוצאה</DialogTitle>
+          <DialogTitle>{isEditing ? "עריכת הוצאה" : "הוספת הוצאה"}</DialogTitle>
           <DialogDescription>
             {isAdmin
               ? "ניתן להוסיף מספר משלמים עם סכומים שונים"
@@ -423,7 +478,7 @@ export function ExpenseDialog({
 
           <Button type="submit" className="w-full h-11 rounded-xl gradient-blue border-0" disabled={loading}>
             {loading ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : null}
-            {loading ? "שומר..." : "שמור הוצאה"}
+            {loading ? "שומר..." : isEditing ? "עדכן הוצאה" : "שמור הוצאה"}
           </Button>
         </form>
       </DialogContent>

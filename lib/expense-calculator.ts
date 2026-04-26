@@ -1,4 +1,5 @@
 import type { Expense, ExpenseSplit, Trip, TripParticipant } from "./supabase/types";
+import type { ExpensePayer } from "./types-v8";
 import { getCountedParticipants, getTotalHeadcount } from "./participant-utils";
 
 /**
@@ -47,13 +48,23 @@ interface Transfer {
 }
 
 /**
- * Calculate the balance for each participant
+ * Calculate the balance for each participant.
+ *
+ * `expensePayers` (optional) lets a single expense be split across multiple
+ * actual payers — e.g. one apartment booking where two families each Bit'd
+ * half. When present, the per-expense `totalPaid` credit is distributed
+ * across those rows (in expense currency, converted via the locked rate)
+ * instead of being credited entirely to `expense.paid_by`.
+ *
+ * If no payer rows exist for an expense, falls back to the legacy single-
+ * payer model where `paid_by` gets the full amount.
  */
 export function calculateBalances(
   expenses: Expense[],
   participants: TripParticipant[],
   profileNames: Record<string, string>,
-  trip?: Pick<Trip, "created_by" | "admin_participates">
+  trip?: Pick<Trip, "created_by" | "admin_participates">,
+  expensePayers?: ExpensePayer[]
 ): Balance[] {
   // Counted = participants whose adults+children feed into per-person splits
   // and headcount math. When `admin_participates === false`, the admin row is
@@ -88,11 +99,59 @@ export function calculateBalances(
     };
   }
 
+  // Group multi-payer rows by expense for O(1) lookup.
+  const payersByExpense = new Map<string, ExpensePayer[]>();
+  if (expensePayers) {
+    for (const ep of expensePayers) {
+      const list = payersByExpense.get(ep.expense_id) ?? [];
+      list.push(ep);
+      payersByExpense.set(ep.expense_id, list);
+    }
+  }
+
+  // Helper: credit `amountILS` of "paid" to one or more profiles for a given
+  // expense. Honours multi-payer rows when present, otherwise falls back to
+  // crediting the single `paid_by` profile.
+  const creditPayers = (expense: Expense, amountILS: number) => {
+    const rows = payersByExpense.get(expense.id);
+    if (rows && rows.length > 0) {
+      // Convert each payer's contribution from expense currency to ILS using
+      // the same locked rate as the expense total.
+      const rawRate = (expense as any).fx_rate_to_ils;
+      const rate =
+        expense.currency === "ILS" || !expense.currency
+          ? 1
+          : rawRate && Number(rawRate) > 0
+            ? Number(rawRate)
+            : 1;
+      let attributed = 0;
+      for (const r of rows) {
+        if (!balances[r.profile_id]) continue;
+        const ils = Number(r.amount) * rate;
+        balances[r.profile_id].totalPaid += ils;
+        attributed += ils;
+      }
+      // Rounding/missing-row safety: if the per-payer rows don't fully cover
+      // the expense, the remainder still goes to the primary `paid_by`.
+      const gap = amountILS - attributed;
+      if (Math.abs(gap) > 0.01 && balances[expense.paid_by]) {
+        balances[expense.paid_by].totalPaid += gap;
+      }
+      return;
+    }
+    if (balances[expense.paid_by]) {
+      balances[expense.paid_by].totalPaid += amountILS;
+    }
+  };
+
   for (const expense of expenses) {
     // CRITICAL: Convert to ILS using LOCKED rate so historical balances don't shift
     const amountILS = toILS(expense);
 
-    // Track private expenses separately (each family pays their own)
+    // Track private expenses separately (each family pays their own).
+    // For private expenses we keep the legacy single-payer accounting:
+    // whoever is on `paid_by` paid AND owes the full amount themselves —
+    // it's never split across multi-payer rows.
     if (expense.split_type === "private") {
       if (balances[expense.paid_by]) {
         balances[expense.paid_by].totalPaid += amountILS;
@@ -111,10 +170,8 @@ export function calculateBalances(
       continue;
     }
 
-    // Track what was paid for shared expenses
-    if (balances[expense.paid_by]) {
-      balances[expense.paid_by].totalPaid += amountILS;
-    }
+    // Track what was paid for shared expenses (multi-payer aware)
+    creditPayers(expense, amountILS);
 
     // Calculate what each person owes
     if (expense.split_type === "custom") {
