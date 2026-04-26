@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowLeft, Check, Smartphone, Wallet, Sparkles, TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowLeft, Check, Smartphone, Wallet, Sparkles, TrendingUp, TrendingDown, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Expense, Trip, TripParticipant } from "@/lib/supabase/types";
 import type { ExpensePayer } from "@/lib/types-v8";
@@ -258,6 +258,48 @@ export function BalanceDashboard({
     setMarking(null);
   }
 
+  async function deleteSettlement(s: Settlement) {
+    if (!isAdmin && s.from_profile !== userId && s.created_by !== userId) {
+      toast.error("רק מי שיצר את ההסדר או מנהל יכולים למחוק");
+      return;
+    }
+    if (!confirm(`למחוק את ההסדר ${formatCurrency(Number(s.amount_ils))}?`)) return;
+    const { error } = await supabase.from("settlements").delete().eq("id", s.id);
+    if (error) {
+      toast.error("שגיאה במחיקה", { description: error.message });
+    } else {
+      toast.success("ההסדר נמחק");
+      router.refresh();
+    }
+  }
+
+  async function editSettlement(s: Settlement) {
+    if (!isAdmin && s.from_profile !== userId && s.created_by !== userId) {
+      toast.error("רק מי שיצר את ההסדר או מנהל יכולים לערוך");
+      return;
+    }
+    const next = prompt(
+      `סכום חדש (₪) — נוכחי: ${Number(s.amount_ils)}`,
+      String(Number(s.amount_ils))
+    );
+    if (next === null) return;
+    const value = Number(next);
+    if (!Number.isFinite(value) || value <= 0) {
+      toast.error("סכום לא חוקי");
+      return;
+    }
+    const { error } = await supabase
+      .from("settlements")
+      .update({ amount_ils: value })
+      .eq("id", s.id);
+    if (error) {
+      toast.error("שגיאה בעדכון", { description: error.message });
+    } else {
+      toast.success("ההסדר עודכן");
+      router.refresh();
+    }
+  }
+
   function bitLink(phone?: string, amount?: number) {
     if (!phone) return null;
     const clean = phone.replace(/[^\d]/g, "");
@@ -393,6 +435,9 @@ export function BalanceDashboard({
                 {formatCurrency(b.totalPaid)}
               </div>
               <div className="text-[10px] text-muted-foreground">שילם</div>
+              <div className="mt-1 tabular-nums font-display text-xs text-muted-foreground">
+                חלקך: {formatCurrency(b.totalOwed)}
+              </div>
               <div
                 className={`text-sm font-semibold mt-1.5 tabular-nums font-display ${
                   positive
@@ -506,7 +551,10 @@ export function BalanceDashboard({
           <h4 className="text-xs font-semibold text-muted-foreground">
             היסטוריית הסדרים ({settlements.length})
           </h4>
-          {settlements.slice(0, 5).map((s) => (
+          {settlements.slice(0, 5).map((s) => {
+            const canEdit =
+              isAdmin || s.from_profile === userId || s.created_by === userId;
+            return (
             <div
               key={s.id}
               className="flex items-center justify-between text-xs py-1.5 border-b border-white/5 last:border-0"
@@ -522,9 +570,32 @@ export function BalanceDashboard({
                 <span className="text-muted-foreground">
                   {new Date(s.settled_at).toLocaleDateString("he-IL")}
                 </span>
+                {canEdit && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => editSettlement(s)}
+                      className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-white/5"
+                      title="עריכה"
+                      aria-label="עריכת הסדר"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteSettlement(s)}
+                      className="p-1 rounded text-muted-foreground hover:text-red-400 hover:bg-white/5"
+                      title="מחיקה"
+                      aria-label="מחיקת הסדר"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </>
+                )}
               </span>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

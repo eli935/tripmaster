@@ -1069,6 +1069,18 @@ function ExpensesTab({
         // Gold shimmer sweep on items created in the last 4 seconds
         const ageMs = Date.now() - new Date(exp.created_at).getTime();
         const isFresh = ageMs < 4000;
+        // Multi-payer label: when there are 2+ payer rows, list each name with
+        // their share; otherwise fall back to the primary `paid_by` profile.
+        const myPayerRows = expensePayers.filter((ep) => ep.expense_id === exp.id);
+        const payersLabel =
+          myPayerRows.length >= 2
+            ? myPayerRows
+                .map((p) => {
+                  const name = profileNames[p.profile_id] || UNKNOWN_NAME;
+                  return `${name} (${formatCurrency(Number(p.amount), exp.currency || "ILS")})`;
+                })
+                .join(" + ")
+            : (exp as any).payer?.full_name || profileNames[exp.paid_by] || UNKNOWN_NAME;
         return (
           <div
             key={exp.id}
@@ -1079,7 +1091,7 @@ function ExpensesTab({
             <div className="min-w-0 flex-1">
               <div className="text-sm font-medium font-serif">{exp.description}</div>
               <div className="text-xs text-muted-foreground">
-                {(exp as any).payer?.full_name || profileNames[exp.paid_by] || UNKNOWN_NAME} · {EXPENSE_CATEGORIES[exp.category as ExpenseCategory] || "אחר"}
+                {payersLabel} · {EXPENSE_CATEGORIES[exp.category as ExpenseCategory] || "אחר"}
               </div>
             </div>
             <div className="flex items-center gap-2">
