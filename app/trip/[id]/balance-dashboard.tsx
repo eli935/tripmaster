@@ -240,12 +240,13 @@ export function BalanceDashboard({
       return;
     }
     setMarking(`${transfer.from}-${transfer.to}`);
+    // method is constrained by the DB to: bit | paybox | cash | bank | other
     const { error } = await supabase.from("settlements").insert({
       trip_id: tripId,
       from_profile: transfer.from,
       to_profile: transfer.to,
       amount_ils: transfer.amount,
-      method: "manual",
+      method: "other",
       created_by: userId,
     });
     if (error) {
