@@ -38,6 +38,7 @@ stage-<N>_v<X.Y>_<YYYY-MM-DD>_<HH-MM>.md
 | 20 | coordinator | ✅ Admin plan seed · Local time · PDF · delete fix (v10.1) | 2026-04-20 | 19:00 | [stage-20_v1.0_2026-04-20_19-00.md](stage-20_v1.0_2026-04-20_19-00.md) |
 | 21 | coordinator | ✅ Daily WhatsApp diagnostics + trip status auto-transition (v10.6) | 2026-04-26 | 21:45 | [stage-21_v1.0_2026-04-26_21-45.md](stage-21_v1.0_2026-04-26_21-45.md) |
 | 22 | coordinator | ✅ Password login + trip-window access gate (v10.7) | 2026-04-26 | 22:30 | [stage-22_v1.0_2026-04-26_22-30.md](stage-22_v1.0_2026-04-26_22-30.md) |
+| 23 | coordinator | ✅ Security hardening + autonomous security agent (v10.10) | 2026-04-29 | 18:00 | [stage-23_v1.0_2026-04-29_18-00.md](stage-23_v1.0_2026-04-29_18-00.md) |
 
 ## 📝 פורמט סטנדרטי לדוח
 
