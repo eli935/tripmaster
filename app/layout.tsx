@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Rubik, Frank_Ruhl_Libre, Fraunces } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const rubik = Rubik({
@@ -59,6 +61,11 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans antialiased">
         {children}
         <Toaster position="top-center" dir="rtl" richColors />
+        {/* Vercel Analytics + Speed Insights — page views, web vitals,
+            unique visitors. Both run only in production by default and
+            send no PII. */}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
